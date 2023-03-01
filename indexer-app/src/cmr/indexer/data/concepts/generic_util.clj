@@ -3,7 +3,6 @@
    complying to a schema supported by the Generic Document system) to and object
    that can be indexed in lucine."
   (:require
-   [cheshire.core :as json]
    [clojure.string :as string]
    [cmr.common.log :refer (debug info warn error)]))
 
@@ -19,10 +18,10 @@
 
 (defn jq->list
   "To make configuration authoring simple for humans, fields of a JSON record are
-   to be denoted using a syntax simaler to the jq unix command. This syntax will
+   to be denoted using a syntax similar to the jq unix command. This syntax will
    define a path into a nested set of fields. The jq path is passed in to this
    function and will be converted to a list that can be used with the built in
-   clojure function get-in to retrive JSON field content.
+   clojure function get-in to retrieve JSON field content.
    Example: .Level1.Level2[1].Level3 -> [:Level1 :Level2 1 :Level3]"
   ([jq-path] (jq->list jq-path str))
   ([jq-path namer]

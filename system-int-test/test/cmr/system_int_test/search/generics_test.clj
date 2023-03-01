@@ -7,7 +7,7 @@
    [clojure.string :as string]
    [clojure.test :refer :all]
    [cmr.common.config :as cfg]
-   [cmr.common.generics :as generics]
+   [cmr.common.generics :as common-generic]
    [cmr.common.util :as util :refer [are3]]
    [cmr.mock-echo.client.echo-util :as echo-util]
    [cmr.system-int-test.system :as system]
@@ -334,7 +334,7 @@
                        (is (is (string/includes? body concept-id) "record not found")))
                
                "explicit UMM JSON version through suffix"
-               (format "umm_json_v%s" (string/replace (generics/current-generic-version (keyword concept-type-string)) #"\." "_"))))
+               (format "umm_json_v%s" (string/replace (common-generic/current-generic-version (keyword concept-type-string)) #"\." "_"))))
            
            (testing "Searching with non-existent UMM JSON version for generics passing the accept header"
              (are3 [acceptHeader]
@@ -354,4 +354,4 @@
                      (is (is (string/includes? body concept-id) "record not found")))
 
                    "explicit UMM JSON version through suffix"
-                   (format "application/vnd.nasa.cmr.umm+json;version=%s" (generics/current-generic-version (keyword concept-type-string))))))))))
+                   (format "application/vnd.nasa.cmr.umm+json;version=%s" (common-generic/current-generic-version (keyword concept-type-string))))))))))

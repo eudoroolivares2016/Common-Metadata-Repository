@@ -92,7 +92,7 @@
       (testing "Using unsupported or incorrect parameters"
         (are [params]
             (let [{:keys [status errors]} (search/find-concepts-with-param-string "collection" params)]
-              (= [400 [(format "Parameter [%s] was not recognized."
+              (= [400 [(format "Parameter collection [%s] was not recognized."
                                (first (clojure.string/split params #"=")))]]
                  [status errors]))
           "insert_time=2011-01-01T00:00:00Z"

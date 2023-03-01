@@ -11,6 +11,7 @@
    [cmr.common.concepts :as cc]
    [cmr.common.mime-types :as mt]
    [cmr.common.date-time-parser :as dt-parser]
+   [cmr.common.generics :as common-generic]
    [cmr.common.parameter-parser :as parser]
    [cmr.common.services.errors :as errors]
    [cmr.common.util :as util]
@@ -109,18 +110,23 @@
     :multiple-value #{}
     :always-case-sensitive #{}
     :disallow-pattern #{}}))
-
+;; (into #{} (keys (retrieve-generic-search-parameters-field :grid)))
 ;; TODO: Generic work: multiple values need to be pulled from config files
+;; TODO in the multiple value section with a function that returns the parameters
+;; for a given concept based on it's concept-type
+;; before tying with grids  :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
+                                                        ;;  (into #{} (keys (common-generic/retrieve-generic-search-parameters-field concept-type))))))))
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/params-config concept-type
     [_]
     (cpv/merge-params-config
      cpv/basic-params-config
+     ;;TODO we should refactor or pull this out
      {:single-value #{:keyword :all-revisions}
-      :multiple-value #{:name :provider :native-id :concept-id :id}
       :always-case-sensitive #{}
-      :disallow-pattern #{}})))
-
+      :disallow-pattern #{}
+      :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
+                                  (into #{} (common-generic/format-search-parameter-keys concept-type)))})))
 (def exclude-params
   "Map of concept-type to parameters which can be used to exclude items from results."
   {:collection #{:tag-key}
@@ -278,13 +284,20 @@
   {:q cpv/string-param-options
    :type cpv/string-plus-or-options})
 
+;; TODO why is this also here??????
+;; merge this map with the list of parameters
+;; 
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-parameter-options concept-type
     [_]
-    {:name cpv/string-param-options
+    (merge 
+     {:name cpv/string-param-options
      :native-id cpv/string-param-options
      :provider cpv/string-param-options
-     :id cpv/string-param-options}))
+     :id cpv/string-param-options}
+     ;; TODO: Change this from hardcoded param
+           (zipmap(vec
+                   (common-generic/format-search-parameter-keys :grid)) (repeat cpv/string-param-options)) )))
 
 (defmethod cpv/valid-query-level-params :collection
   [_]
@@ -1035,7 +1048,7 @@
 (defn- unrecognized-tile-params-validation
   "Validates that no invalid parameters were supplied to tile search"
   [params]
-  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter tile [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-tile-search-params)))
 
 (defn validate-tile-parameters
@@ -1068,7 +1081,7 @@
 (defn- unrecognized-deleted-colls-params-validation
   "Validates that no invalid parameters were supplied to deleted collections search"
   [params]
-  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter for collas params [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-deleted-collections-search-params)))
 
 (defn- deleted-colls-result-format-validation
@@ -1118,7 +1131,7 @@
 (defn- unrecognized-deleted-grans-params-validation
   "Validates that no invalid parameters were supplied to deleted granules search"
   [params]
-  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter granukles [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-deleted-granules-search-params)))
 
 (defn- validate-deleted-grans-revision-date-str

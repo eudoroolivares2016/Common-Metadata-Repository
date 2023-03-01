@@ -263,7 +263,7 @@
                     [(msg/invalid-sort-key (csk/->snake_case_string field) concept-type)])))
               sort-keys))
     []))
-
+;; TODO: the parameters that are passed in
 (def concept-type->valid-param-names
   "A set of the valid parameter names for the given concept-type."
   (memoize
@@ -285,7 +285,8 @@
 (defn unrecognized-params-validation
   "Validates that no invalid parameters were supplied"
   [concept-type params]
-  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
+  ;; TODO this is the part where it's coming from
+  (map #(format "Parameter was changed here [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params))
                        (set/union standard-valid-params
                                   (concept-type->valid-param-names concept-type)

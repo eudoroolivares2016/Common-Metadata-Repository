@@ -6,7 +6,7 @@
    [clojure.test :refer :all]
    [cmr.mock-echo.client.echo-util :as echo-util]
    [cmr.common.config :as config]
-   [cmr.common.generics :as gcfg]
+   [cmr.common.generics :as common-generic]
    [cmr.ingest.api.generic-documents :as gdocs]
    [cmr.system-int-test.system :as system]
    [cmr.system-int-test.utils.generic-util :as gen-util]
@@ -38,9 +38,9 @@
   (testing
    "Test that approved-generic? approves configured Generic document types"
     (with-redefs [config/approved-pipeline-documents (fn [] {:grids ["1.0.0"]})]
-      (is (true? (gcfg/approved-generic? :grids "1.0.0")) "Grids should be an approved format")
-      (is (not (gcfg/approved-generic? :grid "0.0.1")) "CMR is using default configuration")
-      (is (not (gcfg/approved-generic? :fake "a.b.c")) "A fake type was incorectly approved")))
+      (is (true? (common-generic/approved-generic? :grids "1.0.0")) "Grids should be an approved format")
+      (is (not (common-generic/approved-generic? :grid "0.0.1")) "CMR is using default configuration")
+      (is (not (common-generic/approved-generic? :fake "a.b.c")) "A fake type was incorectly approved")))
   (testing
    "Verify that a document can be validated as approved schema."
     (with-redefs [config/approved-pipeline-documents (fn [] {:grid ["0.0.1"]})]

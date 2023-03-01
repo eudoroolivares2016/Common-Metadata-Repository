@@ -1093,3 +1093,7 @@
   "Html escape the given string. it is used to deal with potential xss issues in user input."
   [s]
   (hp-util/escape-html s))
+
+(defn map-function-on-map-vals [m f]
+  (reduce (fn [altered-map [k v]] (assoc altered-map k (f v))) {} m))
+

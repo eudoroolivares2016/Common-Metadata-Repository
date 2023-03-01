@@ -8,7 +8,7 @@
 
   ## Markdown Support
 
-  This namespace provides a few untility functions for converting Markdown
+  This namespace provides a few utility functions for converting Markdown
   (and Markdown files) to HTML. The converted string data may then be used in
   templates. Note that if you are using Selmer templates, you will need to
   'pipe' the converted HTML string data to the `safe` Selmer filter so that
@@ -76,7 +76,7 @@
   Note that these static-content-generating namespaces should be very
   lightweight, not pulling any heavy namespaces in the `require`s. This will
   allow static content to be generated in mere seconds (usually 15-30s) as
-  opposed to severl minutes.
+  opposed to several minutes.
 
 
   ## Profiles and `lein` Aliases
@@ -144,7 +144,6 @@
    [cmr.common-app.api.routes :as cr]
    [cmr.common-app.config :as config]
    [cmr.common-app.site.pages :as pages]
-   [cmr.common.generics :as gconfig]
    [cmr.common.generics-documentation :as gdocs]
    [compojure.handler :as handler]
    [compojure.route :as route]

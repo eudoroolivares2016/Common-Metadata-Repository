@@ -15,6 +15,7 @@
    Parameters:
    * raw-json, json as a string to validate"
   [raw-json]
+  ;; why is this hardcoded to 0.0.1 also why does it get weird
   (let [schema-file (slurp (io/resource "schemas/index/v0.0.1/schema.json"))
         schema-obj (js-validater/json-string->json-schema schema-file)]
     (js-validater/validate-json schema-obj raw-json)))
@@ -24,8 +25,8 @@
   5)
 
 (defconfig elastic-generic-index-num-shards
-  "Number of shards to use for the generic document index. This value can be overriden
-  by an environment variable. This value can also be overriden in the schema specific
+  "Number of shards to use for the generic document index. This value can be overridden
+  by an environment variable. This value can also be overridden in the schema specific
   configuration files. These files are found in the schemas project.
   Here is an example:
   \"IndexSetup\" : {
@@ -38,7 +39,7 @@
 (def generic-setting
   "This def is here as a default just in case these values are not specified in the
   schema specific configuration file found in the schemas project.
-  These values can be overriden in the schema specific configuration file.
+  These values can be overridden in the schema specific configuration file.
   Here is an example:
   \"IndexSetup\" : {
     \"index\" : {\"number_of_shards\" : 5,
@@ -52,6 +53,7 @@
 
 ;; By default, these are the indexes that all generics will have, these are mostly
 ;; from the database table
+;; TODO: extend to the particular ones that each should have
 (def base-indexes
   {:concept-id m/string-field-mapping
    :revision-id m/int-field-mapping
@@ -130,11 +132,12 @@
                     (.getMessage e))
                 gen-name
                 gen-version)))))
-
+;; TODO: This may be causing issues with parsing the json schema if you add
+;; the search parameters
 (defn- validate-index-against-schema-safe
   "Wrap the validate-index-against-schema function in a try catch block to prevent
    basic JSON parse errors from throwing errors. If problems are encountered, log
-   the event and return nil allowing other code to proceide with working schemas.
+   the event and return nil allowing other code to proceed with working schemas.
    "
   [raw-json schema]
   (try
@@ -152,7 +155,7 @@
 (defn- json-parse-string-safe
   "Wrap the json parse-string function in a try/catch block and write an error log
    and return nil if there is a problem, otherwise return the parsed JSON. All
-   parameteres are passed to json/parse-string."
+   parameters are passed to json/parse-string."
   [& options]
   (try
     (apply json/parse-string options)
@@ -175,11 +178,13 @@
   (reduce (fn [data gen-keyword]
             (let [gen-name (name gen-keyword)
                   gen-ver (last (gen-keyword (cfg/approved-pipeline-documents)))
-                  index-definition-str (read-schema-definition gen-keyword gen-ver)
+                  index-definition-str (read-schema-definition gen-keyword gen-ver) 
                   index-definition (when-not (validate-index-against-schema-safe
                                               index-definition-str
-                                              gen-name)
+                                              gen-name) 
                                     (json-parse-string-safe index-definition-str true))
+                  ;; _(println (str "This is the index defininition-stt for " gen-keyword))
+                  ;; _(println index-definition)
                   index-list (gen-util/only-elastic-preferences (:Indexes index-definition))
                   generic-settings (get-settings index-definition)]
               (if index-definition

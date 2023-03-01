@@ -141,7 +141,7 @@
                            first
                            name
                            csk/->snake_case_string)]
-        (= [400 [(format "Parameter [%s] was not recognized." param-name)]]
+        (= [400 [(format "Parameter deeted colls [%s] was not recognized." param-name)]]
            [status errors]))
 
       {:concept-id "C1-PROV1"}

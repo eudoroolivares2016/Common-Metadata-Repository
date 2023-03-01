@@ -9,6 +9,7 @@
    [cmr.common-app.services.search.query-model :as cqm]
    [cmr.common.concepts :as cc]
    [cmr.common.date-time-parser :as parser]
+   [cmr.common.generics :as common-generic]
    [cmr.common.services.errors :as errors]
    [cmr.common.util :as util]
    [cmr.search.models.query :as qm]
@@ -199,14 +200,27 @@
 
 ;; TODO - generic concept work, these are the base parameters, we still need to 
 ;; add additional search parameters dynamically based off each generic concept's index.json
+;; before trying with hardcoded grid value
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod common-params/param-mappings concept-type
     [_]
-    {:name :string
-     :id :string
-     :provider :string
-     :native-id :string
-     :concept-id :string}))
+    (merge {:name :string
+            :id :string
+            :provider :string
+            :native-id :string
+            :concept-id :string} (common-generic/generic-custom-param-mappings concept-type))))
+
+
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod common-params/param-mappings concept-type
+;;     [_]
+;;     {:name :string
+;;      :id :string
+;;      :provider :string
+;;      :native-id :string
+;;      :concept-id :string
+;;      :coordinatereferencesystemid-type :string
+;;      :coordinatereferencesystem :string}))
 
 (defmethod common-params/always-case-sensitive-fields :collection
   [_]

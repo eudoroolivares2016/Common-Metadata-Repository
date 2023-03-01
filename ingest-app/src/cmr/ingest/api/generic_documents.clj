@@ -7,7 +7,7 @@
    [clojure.set :as set]
    [cmr.acl.core :as acl]
    [cmr.common-app.api.launchpad-token-validation :as lt-validation]
-   [cmr.common.generics :as gconfig]
+   [cmr.common.generics :as common-generic]
    [cmr.common.concepts :as common-concepts]
    [cmr.common.config :as cfg]
    [cmr.common.log :refer [debug info warn error]]
@@ -33,7 +33,7 @@
    * schema, the keyword name of an approved generic
    * schema version, the schema version number, without 'v'"
   [schema version raw-json]
-  (if-not (gconfig/approved-generic? schema version)
+  (if-not (common-generic/approved-generic? schema version)
     (errors/throw-service-error
      :invalid-data
      (format "The [%s] schema on version [%s] is not an approved schema, this record cannot be ingested." (util/html-escape schema) (util/html-escape version)))
@@ -41,7 +41,7 @@
       (errors/throw-service-error
        :invalid-data
        (format "The %s schema is currently disabled and cannot be ingested." (util/html-escape schema)))
-      (if-some [schema-file (gconfig/read-schema-specification schema version)]
+      (if-some [schema-file (common-generic/read-schema-specification schema version)]
         (let [schema-obj (js-validater/json-string->json-schema schema-file)]
           (js-validater/validate-json schema-obj raw-json true))
         (errors/throw-service-error
