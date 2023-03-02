@@ -1048,7 +1048,7 @@
 (defn- unrecognized-tile-params-validation
   "Validates that no invalid parameters were supplied to tile search"
   [params]
-  (map #(format "Parameter tile [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-tile-search-params)))
 
 (defn validate-tile-parameters
@@ -1081,7 +1081,7 @@
 (defn- unrecognized-deleted-colls-params-validation
   "Validates that no invalid parameters were supplied to deleted collections search"
   [params]
-  (map #(format "Parameter for collas params [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-deleted-collections-search-params)))
 
 (defn- deleted-colls-result-format-validation
@@ -1131,7 +1131,7 @@
 (defn- unrecognized-deleted-grans-params-validation
   "Validates that no invalid parameters were supplied to deleted granules search"
   [params]
-  (map #(format "Parameter granukles [%s] was not recognized." (csk/->snake_case_string %))
+  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
        (set/difference (set (keys params)) valid-deleted-granules-search-params)))
 
 (defn- validate-deleted-grans-revision-date-str
