@@ -42,6 +42,12 @@
   [context]
   (get-in context [:system :search-index]))
 
+(defn context->generic-search-parameters
+  "Returns the search index given a context. This assumes that the search index is always located in a
+   system using the :search-index key."
+  [context]
+  (get-in context [:system :generic-search-parameters-map]))
+
 (defn context->conn
   "Returns the connection given a context. This assumes that the search index is always located in a
    system using the :search-index key."
@@ -50,15 +56,18 @@
 
 (defn- query-fields->elastic-fields
   "Converts all of the CMR business logic field names to the actual fields in elastic."
-  [concept-type fields]
-  (map #(q2e/query-field->elastic-field (keyword %) concept-type) fields))
+  ([concept-type fields] (query-fields->elastic-fields concept-type fields ""))
+  ([concept-type fields generic-search-param-obj]
+  (map #(q2e/query-field->elastic-field (keyword %) concept-type generic-search-param-obj) fields)))
 
 (defn- query->execution-params
   "Returns the Elasticsearch execution parameters extracted from the query. These are the
   actual ES parameters as expected by the elastisch library. The :scroll-id parameter is special
   and is stripped out before calling elastisch to determine whether a normal search call or a
   scroll call should be made."
-  [query]
+  ([query]
+   (query->execution-params query ""))
+  ([query generic-search-param-obj]
   (let [{:keys [page-size offset concept-type aggregations highlights scroll scroll-id search-after]} query
         scroll-timeout (when scroll (es-config/elastic-scroll-timeout))
         search-type (if scroll
@@ -67,7 +76,7 @@
         sort-params (q2e/query->sort-params query)
         fields (query-fields->elastic-fields
                  concept-type
-                 (or (:result-fields query) (concept-type+result-format->fields concept-type query)))]
+                 (or (:result-fields query) (concept-type+result-format->fields concept-type query)) generic-search-param-obj)]
     {:version true
      :timeout (es-config/elastic-query-timeout)
      :sort sort-params
@@ -79,7 +88,7 @@
      :scroll-id scroll-id
      :search-after search-after
      :search_type search-type
-     :highlight highlights}))
+     :highlight highlights})))
 
 (defmulti handle-es-exception
   "Handles exceptions from ES. Unexpected exceptions are simply re-thrown."
@@ -178,19 +187,28 @@
   (fn [context query]
     (:page-size query)))
 
+;; This function sends via the elastic search API
+;; TODO: This is the top level where the context is getting passed
 (defmethod send-query-to-elastic :default
   [context query]
   (let [elastic-query (q2e/query->elastic query)
         {sort-params :sort
          aggregations :aggs
-         highlights :highlight :as execution-params} (query->execution-params query)
+         generic-concept-param-map (context->generic-search-parameters context)
+         highlights :highlight :as execution-params} (query->execution-params query (context->generic-search-parameters context))
         concept-type (:concept-type query)
+        _(println "This is the search context" generic-concept-param-map)
+        ;; if this is generic rename indexes
         index-info (concept-type->index-info context concept-type query)
+        _ (println "This is the elastic query" elastic-query)
         query-map (-> elastic-query
                       (merge execution-params)
+                      ;; TODO: merge this map with a key renaming scheme
+                      ;; Rename the key passed in to elastic index mapping saved in the config file
+                      ;; (set/rename-keys {:search-after :search_after :coordinatereferencesystemid-code-lowercase :long_name})
                       ;; rename search-after to search_after for ES execution
-                      (set/rename-keys {:search-after :search_after})
                       util/remove-nil-keys)]
+    _ (println "This is the elastic query after re-map" elastic-query)
     (info "Executing against indexes [" (:index-name index-info) "] the elastic query:"
            (pr-str elastic-query)
            "with sort" (pr-str sort-params)

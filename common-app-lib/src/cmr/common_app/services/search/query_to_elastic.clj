@@ -19,17 +19,20 @@
   {:type Boolean
    :default false})
 
+;; TODO: This is the function doing the mappings
 (defmulti concept-type->field-mappings
   "Returns a map of fields in the query to the field name in elastic. Field names are excluded from
   this map if the query field name matches the field name in elastic search."
-  (fn [concept-type]
+  (fn [concept-type context-search-params]
     concept-type))
 
 (defmethod concept-type->field-mappings :default
-  [_]
+  [_ _]
   ;; No field mappings specified by default
   {})
 
+;; TODO: This is actually what we want for the generics to use
+;; This function is being extendded by generics but, they need the field passed
 (defmulti elastic-field->query-field-mappings
   "A map of fields in elasticsearch to their query model field names. Field names are
   excluded from this map if the CMR query field name matches the field name in elastic search."
@@ -40,11 +43,17 @@
   [_]
   ;; No field mappings specified by default
   {})
-
+;; generic-search-param-obj
+;; TODO: This is used to retreive all the concepts This is used for all of them
 (defn query-field->elastic-field
   "Returns the elastic field name for the equivalent query field name."
-  [field concept-type]
-  (get (concept-type->field-mappings concept-type) (keyword field) field))
+  ([field concept-type]
+   (query-field->elastic-field field concept-type ""))
+  ([field concept-type generic-search-param-obj]
+  (let [gensearch generic-search-param-obj
+        _(println "The context object that has been passed down from the top" generic-search-param-obj)]
+   (get (concept-type->field-mappings concept-type generic-search-param-obj) (keyword field) field)
+   )))
 
 (defn- elastic-field->query-field
   "Returns the query field name for the equivalent elastic field name."

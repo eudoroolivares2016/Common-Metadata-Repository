@@ -52,12 +52,12 @@
                            :result-format result-format
                            :scroll-id scroll-id
                            :search-after search-after})))
-
+;; TODO: Generic work hardcoded
 (doseq [concept-type (concepts/get-generic-concept-types-array)]
   (defmethod elastic-search-index/concept-type+result-format->fields [concept-type :json]
     [concept-type query]
     ["concept-id" "revision-id" "deleted" "provider-id" "native-id" "name" "id" "associations-gzip-b64"]))
-
+;; TODO: Generic work hardcoded
 (doseq [concept-type (concepts/get-generic-concept-types-array)]
   (defmethod er-to-qr/elastic-result->query-result-item [concept-type :json]
     [context query elastic-result]
@@ -66,6 +66,7 @@
             deleted :deleted
             provider-id :provider-id
             native-id :native-id
+            _(println (:generic-search-parameters-map context))
             concept-id :concept-id
             associations-gzip-b64 :associations-gzip-b64} :_source} elastic-result
           revision-id (er-to-qr/get-revision-id-from-elastic-result concept-type elastic-result)

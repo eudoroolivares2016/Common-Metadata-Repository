@@ -5,6 +5,7 @@
    [clojure.java.io :as io]
    [clojure.string :as string]
    [cmr.common.config :as cfg :refer [defconfig]]
+   [cmr.common.generics :as common-generic]
    [cmr.common.log :as log :refer (error)]
    [cmr.elastic-utils.index-util :as m]
    [cmr.indexer.data.concepts.generic-util :as gen-util]
@@ -15,7 +16,6 @@
    Parameters:
    * raw-json, json as a string to validate"
   [raw-json]
-  ;; why is this hardcoded to 0.0.1 also why does it get weird
   (let [schema-file (slurp (io/resource "schemas/index/v0.0.1/schema.json"))
         schema-obj (js-validater/json-string->json-schema schema-file)]
     (js-validater/validate-json schema-obj raw-json)))
@@ -53,9 +53,12 @@
 
 ;; By default, these are the indexes that all generics will have, these are mostly
 ;; from the database table
-;; TODO: extend to the particular ones that each should have
+;; TODO: merge the indexes together with the custom indexes
+;; These are for sure the indexes that are showing up in elastic
 (def base-indexes
   {:concept-id m/string-field-mapping
+   ;; TODO: remove
+   :something m/string-field-mapping
    :revision-id m/int-field-mapping
    :deleted m/bool-field-mapping
    :gen-name m/string-field-mapping
@@ -183,9 +186,8 @@
                                               index-definition-str
                                               gen-name) 
                                     (json-parse-string-safe index-definition-str true))
-                  ;; _(println (str "This is the index defininition-stt for " gen-keyword))
-                  ;; _(println index-definition)
-                  index-list (gen-util/only-elastic-preferences (:Indexes index-definition))
+                  ;; TODO: We need to merge this with our context object
+                  index-list (common-generic/only-elastic-preferences (:Indexes index-definition))
                   generic-settings (get-settings index-definition)]
               (if index-definition
                 (assoc data
@@ -194,7 +196,8 @@
                                    :settings generic-settings}
                                   {:name (format "all-generic-%s-revisions" gen-name)
                                    :settings generic-settings}]
-                        :mapping {:properties (reduce mapping->index-key base-indexes index-list)}})
+                        ;; TODO: remove and fix this
+                        :mapping {:properties (merge (reduce mapping->index-key base-indexes index-list) {:something {:type "keyword"}})}})
                 (do
                   (error (format "Could not parse the index.json file for %s version %s."
                                  gen-name
@@ -213,4 +216,18 @@
   (when (nil? (:generic-grid (generic-mappings-generator)))
     (println "Missing Generic Grid definition"))
 
+
+  (def read-schema (read-schema-definition :grid "0.0.1"))
+
+  (def index-definition (when-not (validate-index-against-schema-safe
+                                   read-schema
+                                   :grid)
+                          (json-parse-string-safe read-schema true)))
+
+  (def index-list (common-generic/only-elastic-preferences (:Indexes index-definition)))
+  
+  
+  (merge (reduce mapping->index-key base-indexes index-list) {:something {:type "keyword"}} )
+  
+  
   )

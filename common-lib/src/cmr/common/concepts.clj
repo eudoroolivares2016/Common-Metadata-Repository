@@ -171,3 +171,15 @@
   "Returns the provider-id associated with the given concept-id."
   [concept-id]
   (:provider-id (parse-concept-id concept-id)))
+
+(defmulti create-search-params-big-map
+  "Returns the parameter config for the given concept type. Parameters config should be a map with
+   keys like that of basic-params-config."
+  )
+
+;; ;; TODO: return the big data structure that we will pass
+;; (doseq [concept-type (get-generic-concept-types-array)]
+;;   (defmethod create-search-params-big-map concept-type
+;;     []
+;;     (println concept-type)))
+

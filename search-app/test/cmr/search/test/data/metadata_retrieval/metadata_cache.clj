@@ -6,7 +6,7 @@
    [cmr.search.test.data.metadata-retrieval.revision-format-map :as rfm]))
 
 (def get-cached-metadata-in-format #'mc/get-cached-metadata-in-format)
-
+;; TODO Is there where the context obj comes from???
 (defn context-with-cache-map
   [cache-map]
   (let [cache (mc/create-cache)]

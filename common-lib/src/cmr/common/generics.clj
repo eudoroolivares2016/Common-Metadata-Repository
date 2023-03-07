@@ -6,6 +6,7 @@
    [clojure.java.io :as io]
    [clojure.string :as string]
    [cmr.common.config :as cfg]
+   [camel-snake-kebab.core :as csk]
    [cmr.common.log :as log :refer [error, info]]
    [cmr.common.util :as util]
    [cmr.schema-validation.json-schema :as js-validater]
@@ -145,26 +146,13 @@
        (map inf/plural)
        (string/join "|")))
 
-;; TODO either we up
-;; (defn map-function-on-map-vals [m f]
-;;   (reduce (fn [altered-map [k v]] (assoc altered-map k (f v))) {} m))
-
-;; TODO note this will only return the latest one
-;; TODO we should have this be overbidden so that you can pass a version but, don't have to
-;; (defn retrieve-generic-concept-search-parameters
-;;   [concept-type]
-;;   ;; TODO: We should explain why we need that true flag here and in the other call
-;;   (util/map-function-on-map-vals (get (json/parse-string (read-schema-index concept-type (current-generic-version concept-type)) true) :SearchParameters "missing") #(keyword %)))
-
-;; (defn retrieve-generic-search-parameters-field
-;;   [concept-type]
-;;    (get (json/parse-string (read-schema-index concept-type (current-generic-version concept-type)) true) :SearchParameters "missing")
-;;   )
-
-;; for each index pull out the name and then convert it to a keyword in clojure
 (defn retrieve-custom-generic-search-parameters
+  "Retrieve the array of indexes that a particular generic concept has"
   [concept-type]
-  (get (json/parse-string (read-schema-index concept-type (current-generic-version concept-type)) true) :Indexes (str "Missing Indexes field in the index.json for " concept-type)))
+  (get (json/parse-string
+        (read-schema-index concept-type
+                           (current-generic-version concept-type)) true) :Indexes
+       (str "Missing Indexes field in the index.json for " concept-type)))
 
 (defn only-elastic-preferences
   "Go through all the index configurations and return only the ones related to 
@@ -172,16 +160,38 @@
    then assume elastic"
   [list-of-indexes]
   (keep #(if (not (nil? %)) %)
-          (map
+        (map
          (fn [x] (when (or (nil? (:Type x)) (= "elastic" (:Type x))) x))
          list-of-indexes)))
 
+
+
+(defn only-specified-type-preferences
+  "Go through all the index configurations in a generic index.json and return only the ones related to 
+   generating elastic values. If an index does not specify what type it is for,
+   then assume elastic"
+  ([list-of-indexes]
+   (only-specified-type-preferences list-of-indexes "elastic"))
+  ([list-of-indexes type-key]
+   (vec (keep #(if (not (nil? %)) %)
+              (map
+               (fn [x] (when (= type-key (:Type x)) x))
+               list-of-indexes)))))
+
 (defn format-search-parameter-keys
+  "Return the list of all of the keys that are indexed by elastic search 
+   lower case them to match how they are stored in elastic-search"
   [concept-type]
   (map #(keyword (string/lower-case (:Name %))) (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))
 
-;;common-params/param-mappings
-(defn generic-custom-param-mappings 
+(defn generic-search-parameter-keys
+  "Return the list of keys in each generics index.json file without formatting"
+  [concept-type]
+  (map #(keyword (:Name %)) (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))
+
+;; TODO: Remove me common-params/param-mappings
+(defn generic-custom-param-mappings
+  "Retrieve the generics index as well the type of mapping that it is string etc"
   [concept-type]
   (into {}  (vec (map
                   #(vec [(keyword (string/lower-case (:Name %)))
@@ -189,17 +199,63 @@
                   (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))))
 
 
+;; This is using the new style
+
+
+
+(defn generic-custom-param-mappings-type
+  "Retrieve the generics index as well the type of mapping that it is string etc"
+  [context-object]
+  ;; Dig into the configuration and pull out the mapping for that particular one
+  (into {} (map #(vec [(keyword (string/lower-case (:Name %))) (keyword (string/lower-case (:Mapping (:Configuration %))))]) context-object)))
+
+
+
+(defn generic-custom-param-mappings-for-reassign-index
+  "Retrieve the generics index as well the type of mapping that it is string etc"
+  [context-object]
+  (into {} (map #(vec [(keyword (string/lower-case (:Name %))) (keyword (string/lower-case (:Field %)))]) context-object)))
+
+
+
+
+(defn retrieve-complex-index-fields
+  "Return the keys for a specified generic which are indexed as complex-fields i.e. Index: complex-field"
+  [concept-type]
+  (remove nil? (map #(keyword (if (= "complex-field" (:Indexer %)) (:Name %)))
+                    (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type)))))
+
+
+;; This will return empty for concepts that do NOT have any custom parameters
+(defn retrieve-custom-search-parameter-mappings
+  [concept-type-key]
+  (assoc {} concept-type-key (only-specified-type-preferences (retrieve-custom-generic-search-parameters concept-type-key) "search")))
+
+;; (def return-big-search-param-map
+;;   (doseq [i (latest-approved-document-types)] (println (conj {} {(keyword i) (retrieve-custom-search-parameter-mappings i)})))
+;;   )
+
+(def return-big-search-param-map
+  (into {} (map #(retrieve-custom-search-parameter-mappings %)  (latest-approved-document-types))))
+
+
+
 (comment
-(into {}  (vec (map
-   #(vec [(keyword (string/lower-case (:Name %)))
-          (keyword (:Mapping %))])
-   (only-elastic-preferences (retrieve-custom-generic-search-parameters :grid)))))
+  (into {}  (vec (map
+                  #(vec [(keyword (string/lower-case (:Name %)))
+                         (keyword (:Mapping %))])
+                  (only-elastic-preferences (retrieve-custom-generic-search-parameters :grid)))))
 
   (map #((keyword (string/lower-case (:Name %))) :random) (only-elastic-preferences (retrieve-custom-generic-search-parameters :grid)))
 
   (map #((:Name %) (:Mapping %)) (only-elastic-preferences (retrieve-custom-generic-search-parameters :grid)))
-  
 
-  (only-elastic-preferences (retrieve-custom-generic-search-parameters :grid))
 
-  )
+  (only-specified-type-preferences (retrieve-custom-generic-search-parameters :grid) "search"))
+
+;; New comments
+(comment
+  (format-search-parameter-keys :grid))
+
+
+

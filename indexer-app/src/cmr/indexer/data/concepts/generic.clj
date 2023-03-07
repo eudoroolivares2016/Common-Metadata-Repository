@@ -8,6 +8,7 @@
    [clojure.java.io :as io]
    [clojure.string :as string]
    [cmr.common.concepts :as concepts]
+   [cmr.common.generics :as common-generic]
    [cmr.common.util :as util]
    [cmr.indexer.data.concepts.association-util :as assoc-util]
    [cmr.indexer.data.concept-parser :as c-parser]
@@ -102,7 +103,7 @@
          :native-id native-id
          :native-id-lowercase (string/lower-case native-id)
          :associations-gzip-b64 (assoc-util/associations->gzip-base64-str generic-associations concept-id)}
-        configs (gen-util/only-elastic-preferences (:Indexes index-data))
+        configs (common-generic/only-elastic-preferences (:Indexes index-data))
         ;; now add the configured indexes
         doc (reduce
              (fn [data, config] (into data (field->index config parsed-concept)))

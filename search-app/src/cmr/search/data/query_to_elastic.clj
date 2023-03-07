@@ -13,7 +13,8 @@
    [cmr.common.services.errors :as errors]
    [cmr.search.data.elastic-relevancy-scoring :as elastic-relevancy-scoring]
    [cmr.search.data.keywords-to-elastic :as k2e]
-   [cmr.search.services.query-walkers.keywords-extractor :as keywords-extractor])
+   [cmr.search.services.query-walkers.keywords-extractor :as keywords-extractor]
+   [cmr.common.generics :as common-generic])
   (:require
    ;; require it so it will be available
    [cmr.search.data.query-order-by-expense]))
@@ -40,7 +41,7 @@
 ;; These mappings are for renames only, same name keys handled by default
 ;; create a matching value in q2e/elastic-field->query-field-mappings
 (defmethod q2e/concept-type->field-mappings :collection
-  [_]
+  [_ _]
   (let [default-mappings {:author :authors
                           :concept-seq-id :concept-seq-id-long
                           :consortium :consortiums
@@ -105,7 +106,7 @@
           [field (doc-values-field-name field)])))
 
 (defmethod q2e/concept-type->field-mappings :granule
-  [_]
+  [_ _]
   (let [default-mappings {:provider :provider-id
                           :concept-seq-id :concept-seq-id-long
                           :collection-concept-seq-id :collection-concept-seq-id-long
@@ -126,47 +127,58 @@
       default-mappings)))
 
 (defmethod q2e/concept-type->field-mappings :tag
-  [_]
+  [_ _]
   {:tag-key :tag-key-lowercase
    :originator-id :originator-id-lowercase})
 
 (defmethod q2e/concept-type->field-mappings :variable
-  [_]
+  [_ _]
   {:provider :provider-id
    :concept-seq-id :concept-seq-id-long
    :name :variable-name})
 
 (defmethod q2e/concept-type->field-mappings :service
-  [_]
+  [_ _]
   {:provider :provider-id
    :name :service-name
    :type :service-type-lowercase})
 
 (defmethod q2e/concept-type->field-mappings :tool
-  [_]
+  [_ _]
   {:provider :provider-id
    :name :tool-name
    :type :tool-type-lowercase})
 
 (defmethod q2e/concept-type->field-mappings :subscription
-  [_]
+  [_ _]
   {:provider :provider-id
    :name :subscription-name
    :type :subscription-type})
 
+;; TODO: This is really what is being done here.
 ;; TODO Generic work - this would be nice to put into a configuration file.
 (doseq [concept-type (concepts/get-generic-concept-types-array)]
   (defmethod q2e/concept-type->field-mappings concept-type
-    [_]
-    {:provider :provider-id}))
+    [concept-type context-search-params]
+    ;; [(keyword (string/lower-case (:Name %)))
+        ;; (keyword (:Mapping %))]
+    (let [context-obj ((keyword concept-type) context-search-params)
+          parsed-context-obj (common-generic/generic-custom-param-mappings-for-reassign-index context-obj)
+          _ (println "The context object has gone to the rename keys in query_to_elastic.clj" context-obj)
+          _ (println "The formatted context object in query_to_elastic.clj" parsed-context-obj)]
+      ;; Add the custom search-parameters into the map
+      (merge {:provider :provider-id :epgscode :coordinatereferencesystemid-code :edslongname :long-name} parsed-context-obj)
+      )
+    ))
 
 (defmethod q2e/elastic-field->query-field-mappings :autocomplete
   [_]
   {:value :value
    :type :type})
-
+;; These we will need to be able to rename the keys
 ;; These mappings are for renames only, same name keys handled by default
 ;; create a matching value in q2e/concept-type->field-mappings
+;; author parameter is remapped here
 (defmethod q2e/elastic-field->query-field-mappings :collection
   [_]
   {:authors :author
@@ -260,7 +272,9 @@
   (defmethod q2e/field->lowercase-field-mappings concept-type
     [_]
     {:provider :provider-id-lowercase
-     :native-id :native-id-lowercase}))
+     :native-id :native-id-lowercase
+     :epgscode :coordinatereferencesystemid-code-lowercase
+     :edslongname :long-name-lowercase}))
 
 (defn- doc-values-lowercase-field-name
   "Returns the doc-values field-name for the given field."
@@ -623,6 +637,7 @@
         default-sort (q2e/sort-keys->elastic-sort concept-type (q/default-sort-keys concept-type))]
     (or specified-sort default-sort)))
 
+;; These are also sort params
 (doseq [doseq-concept-type (concepts/get-generic-concept-types-array)]
   (defmethod q2e/query->sort-params doseq-concept-type
     [query]

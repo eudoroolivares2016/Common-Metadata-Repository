@@ -113,7 +113,7 @@
                 "Type": {
                     "description": "target index software to host the index",
                     "type": "string",
-                    "enum": ["elastic", "graph"],
+                    "enum": ["elastic", "graph", "search"],
                     "default": "elastic"
                 },
                 "Name": {

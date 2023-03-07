@@ -20,6 +20,7 @@
   [associations-json]
   (jv/validate-associations-json (tv/sanitized-json associations-json))
   (->> (json/parse-string associations-json)
+       ;; TODO: renaming keys could be useful function
        (map #(set/rename-keys % {"concept_id" :concept-id
                                  :concept_id :concept-id
                                  "concept-id" :concept-id

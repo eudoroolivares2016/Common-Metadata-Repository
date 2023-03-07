@@ -119,7 +119,7 @@
                      {:term {:provider-id-lowercase (.toLowerCase provider-id)}}))
 
 (defmethod q2e/concept-type->field-mappings :access-group
-  [_]
+  [_ _]
   {:provider :provider-id})
 
 (defmethod q2e/field->lowercase-field-mappings :access-group
@@ -406,7 +406,7 @@
    :type-name acl-type-name})
 
 (defmethod q2e/concept-type->field-mappings :acl
-  [_]
+  [_ _]
   {:provider :target-provider-id})
 
 (defmethod q2e/field->lowercase-field-mappings :acl

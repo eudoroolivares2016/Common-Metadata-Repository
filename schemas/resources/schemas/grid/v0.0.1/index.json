@@ -52,7 +52,7 @@
       "Field": ".GridDefinition.CoordinateReferenceSystemID.URL",
       "Name": "CoordinateReferenceSystemID-URL",
       "Mapping": "string"
-    },
+  },
     {
       "Description": "Coordinate Reference System",
       "Field": ".GridDefinition.CoordinateReferenceSystemID",
@@ -107,6 +107,24 @@
           "properties": ["URL", "URLContentType"],
           "relationship": "RelatedTo"
           }
-  }
+  },
+  {
+  "Description": "The exposed search-parameter", 
+  "Type": "search",
+  "Field": "CoordinateReferenceSystemID-Code",
+  "Name": "epgscode",
+  "Configuration": {
+   "Operators": ["or"],
+   "Mapping": "string"
+   }},
+   {
+    "Description": "The exposed search-parameter long-name", 
+    "Type": "search",
+    "Field": "Long-Name",
+    "Name": "edslongname",
+    "Configuration": {
+     "Operators": ["and"],
+     "Mapping": "string"
+     }}
   ]
 }

@@ -29,6 +29,12 @@
       "Field": ".Id",
       "Name": "Id",
       "Mapping": "string"
+    },
+    {
+      "Description": "The Summary",
+      "Field": ".Summary",
+      "Name": "Summary",
+      "Mapping": "string"
     }
   ]
 }

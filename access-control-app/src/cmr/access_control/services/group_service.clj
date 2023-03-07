@@ -328,7 +328,7 @@
    {:field :name :order :asc}])
 
 (defmethod cp/param-mappings :access-group
-  [_]
+  [_ _]
   {:provider :access-group-provider
    :name :string
    :member :string

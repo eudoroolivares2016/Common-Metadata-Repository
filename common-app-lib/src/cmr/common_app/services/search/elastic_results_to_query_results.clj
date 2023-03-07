@@ -56,6 +56,7 @@
                           default-query-specified-elastic-result-item-processor)]
     (processor context query elastic-result)))
 
+;; Query results
 (defmulti elastic-results->query-results
   "Converts elastic search results to query results"
   (fn [context query elastic-results]

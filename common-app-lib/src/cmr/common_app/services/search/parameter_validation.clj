@@ -268,7 +268,7 @@
   "A set of the valid parameter names for the given concept-type."
   (memoize
    (fn [concept-type]
-     (set (keys (p/param-mappings concept-type))))))
+     (set (keys (p/param-mappings concept-type ""))))))
 
 (defmulti valid-query-level-params
   "Returns a set of parameter names that are valid at the query level"
@@ -285,12 +285,12 @@
 (defn unrecognized-params-validation
   "Validates that no invalid parameters were supplied"
   [concept-type params]
-  ;; TODO this is the part where it's coming from
-  (map #(format "Parameter [%s] was not recognized." (csk/->snake_case_string %))
-       (set/difference (set (keys params))
-                       (set/union standard-valid-params
-                                  (concept-type->valid-param-names concept-type)
-                                  (valid-query-level-params concept-type)))))
+  ;; TODO: GRID This is wehre the generics erro is coming form
+  (map #(format "Parameter [%s] was not recognized. for generic?" (csk/->snake_case_string %))
+   (set/difference (set (keys params))
+                   (set/union standard-valid-params
+                              (concept-type->valid-param-names concept-type)
+                              (valid-query-level-params concept-type)))))
 
 (defmulti valid-query-level-options
   "Returns a set of query level options that are valid."
@@ -426,3 +426,6 @@
   ([concept-type params validations other-errors]
    (when-let [errors (seq (concat other-errors (mapcat #(% concept-type params) validations)))]
      (errors/throw-service-errors :bad-request errors))))
+
+
+(comment (merge {:a 1} {}))

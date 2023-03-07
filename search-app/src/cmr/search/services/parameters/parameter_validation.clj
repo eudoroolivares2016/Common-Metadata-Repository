@@ -27,7 +27,7 @@
   (:import
    (clojure.lang ExceptionInfo)
    (java.lang Integer Long)))
-
+;; TODO: Author is being passed here as well
 (defmethod cpv/params-config :collection
   [_]
   (cpv/merge-params-config
@@ -110,22 +110,17 @@
     :multiple-value #{}
     :always-case-sensitive #{}
     :disallow-pattern #{}}))
-;; (into #{} (keys (retrieve-generic-search-parameters-field :grid)))
-;; TODO: Generic work: multiple values need to be pulled from config files
-;; TODO in the multiple value section with a function that returns the parameters
-;; for a given concept based on it's concept-type
-;; before tying with grids  :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
-                                                        ;;  (into #{} (keys (common-generic/retrieve-generic-search-parameters-field concept-type))))))))
+;; TODO: Generics
+;; merges the parameters in the generic with the basic
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/params-config concept-type
     [_]
     (cpv/merge-params-config
      cpv/basic-params-config
-     ;;TODO we should refactor or pull this out
      {:single-value #{:keyword :all-revisions}
       :always-case-sensitive #{}
       :disallow-pattern #{}
-      :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
+      :multiple-value (set/union #{:name :provider :native-id :concept-id :id :epgscode :edslongname}
                                   (into #{} (common-generic/format-search-parameter-keys concept-type)))})))
 (def exclude-params
   "Map of concept-type to parameters which can be used to exclude items from results."
@@ -140,6 +135,7 @@
   [_]
   {:archive-center cpv/string-param-options
    :attribute exclude-plus-or-option
+   ;; TODO: Here author is being explictly called
    :author cpv/string-plus-and-options
    :bounding-box cpv/and-or-option
    :campaign cpv/string-plus-and-options
@@ -284,20 +280,22 @@
   {:q cpv/string-param-options
    :type cpv/string-plus-or-options})
 
-;; TODO why is this also here??????
-;; merge this map with the list of parameters
-;; 
+;; merge this map with the list of parameters it was hardcoded
+;; TODO: we should investigate that everything is really working here
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-parameter-options concept-type
     [_]
-    (merge 
+    (merge
      {:name cpv/string-param-options
      :native-id cpv/string-param-options
      :provider cpv/string-param-options
-     :id cpv/string-param-options}
-     ;; TODO: Change this from hardcoded param
-           (zipmap(vec
-                   (common-generic/format-search-parameter-keys :grid)) (repeat cpv/string-param-options)) )))
+     :id cpv/string-param-options
+     :epgscode cpv/string-param-options
+     :edslongname cpv/string-param-options}
+     ;; TODO Generic Work: Right now we are setting all of the params to use the
+     ;; same config we should have this as a field in the index.json
+           (zipmap (vec
+                   (common-generic/format-search-parameter-keys concept-type)) (repeat cpv/string-param-options)))))
 
 (defmethod cpv/valid-query-level-params :collection
   [_]
@@ -332,6 +330,7 @@
   [_]
   #{:all-revisions})
 
+;; TODO: Generics 
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-query-level-params concept-type
     [_]
@@ -409,7 +408,7 @@
     :subscription-name
     :collection-concept-id
     :provider})
-
+;; Generics's valid sort-keys
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-sort-keys concept-type
     [_]
@@ -955,6 +954,7 @@
     :autocomplete cpv/common-validations
     :subscription (concat cpv/common-validations
                           [boolean-value-validation])}
+   ;; TODO the generic work
    (zipmap (cc/get-generic-concept-types-array)
            (repeat (concat cpv/common-validations
                            [boolean-value-validation])))))

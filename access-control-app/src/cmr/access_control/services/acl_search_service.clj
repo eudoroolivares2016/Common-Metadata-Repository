@@ -156,7 +156,7 @@
   [{:field :display-name-lowercase :order :asc}])
 
 (defmethod cp/param-mappings :acl
-  [_]
+  [_ _]
   {:permitted-concept-id :permitted-concept-id
    :permitted-group :string
    :identity-type :acl-identity-type

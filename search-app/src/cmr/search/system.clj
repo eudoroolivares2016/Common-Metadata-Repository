@@ -13,6 +13,7 @@
    [cmr.common.api.web-server :as web-server]
    [cmr.common.cache.in-memory-cache :as mem-cache]
    [cmr.common.config :as cfg :refer [defconfig]]
+   [cmr.common.generics :as common-generic]
    [cmr.common.jobs :as jobs]
    [cmr.common.log :as log :refer [info]]
    [cmr.common.nrepl :as nrepl]
@@ -104,6 +105,7 @@
              ;; from oracle.
              :embedded-systems {:metadata-db metadata-db}
              :search-index (common-idx/create-elastic-search-index)
+             :generic-search-parameters-map common-generic/return-big-search-param-map
              :web (web-server/create-web-server (transmit-config/search-port) routes/handlers)
              :nrepl (nrepl/create-nrepl-if-configured (search-nrepl-port))
              ;; Caches added to this list must be explicitly cleared in query-service/clear-cache

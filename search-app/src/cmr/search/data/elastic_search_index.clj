@@ -193,16 +193,20 @@
                  "1_all_subscription_revisions"
                  "1_subscriptions")
    :type-name "subscription"})
-
+;; TODO: Have I found the needle in the haystack?????
 (doseq [concept-type (concepts/get-generic-concept-types-array)]
   (defmethod common-esi/concept-type->index-info concept-type
     [context _ query] 
     {:index-name (if (:all-revisions? query)
+                   
                    (format "1_all_generic_%s_revisions" (string/replace (name concept-type) 
                                                                         #"-" "_"))
                    (format "1_generic_%s" (string/replace (name concept-type) 
                                                           #"-" "_")))
-     :type-name (name concept-type)}))
+     :type-name (name concept-type)}
+    ;; (println (:generic-search-parameters-map (:system context)))
+    ;; (println (:field (:condition query)))
+   ))
 
 (defn context->conn
   [context]
@@ -268,3 +272,11 @@
                                               :provider-id provider-id
                                               :concept-type :collection})
                   num-granules])))))
+
+
+(comment
+
+  (fetch-concept-type-index-names :grid)
+  
+  
+  )

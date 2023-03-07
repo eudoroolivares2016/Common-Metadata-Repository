@@ -83,18 +83,18 @@
 
 (defmulti param-mappings
   "Returns the mapping of parameter name to parameter type given a concept type."
-  (fn [concept-type]
+  (fn [concept-type context]
     concept-type))
 
 (defn- param-name->type
   "Returns the query condition type based on the given concept-type and param-name."
-  [concept-type param-name]
-  (get (param-mappings concept-type) param-name))
+  [concept-type param-name context]
+  (get (param-mappings concept-type context) param-name))
 
 (defmulti parameter->condition
   "Converts a parameter into a condition"
   (fn [context concept-type param value options]
-    (param-name->type concept-type param)))
+    (param-name->type concept-type param context)))
 
 (defmethod parameter->condition :default
   [_context concept-type param value options]

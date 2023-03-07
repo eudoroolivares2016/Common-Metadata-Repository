@@ -43,7 +43,7 @@
   "Join parts, lowercase letters and change '-' to '_'."
   [prefix-id suffix]
   (string/lower-case (string/replace (format "%s_%s" prefix-id suffix) #"-" "_")))
-
+;; This will create all of the indicies in elastic search
 (defn- build-indices-list-w-config
   "Given an index-set, build list of indices with config."
   [idx-set]
@@ -93,7 +93,7 @@
          index-sets)))
 
 (defn index-set-exists?
-  "Check index-set existsence"
+  "Check index-set existence"
   [context index-set-id]
   (let [{:keys [index-name mapping]} config/idx-cfg-for-index-sets
         idx-mapping-type (first (keys mapping))]

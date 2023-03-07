@@ -187,7 +187,7 @@
     concept-type
     (create-and-validate-concepts-query-parameters
      context concept-type params tag-data))))
-
+;; TODO This is the search position that sets parametrs
 (defn generate-query-conditions-for-parameters
   "Given the query params, generate the conditions for elastic search. Returns
   just the search conditions."
@@ -200,7 +200,10 @@
   "Executes a search for concepts using the given parameters. The concepts will be returned with
   concept id and native provider id along with hit count and timing info."
   [context concept-type params]
+  ;; (def ctx (:generic-search-parameters-map (:system context)))
+  ;; (println "This is my ctx" ctx)
   (let [tag-data (make-concepts-tag-data params)
+        ;;_(println "this is the context" (:generic-search-parameters-map (:sys context)))
         [query-creation-time query] (u/time-execution
                                      (make-concepts-query
                                       context concept-type params tag-data))

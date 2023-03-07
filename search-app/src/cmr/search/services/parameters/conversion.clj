@@ -8,6 +8,7 @@
    [cmr.common-app.services.search.params :as common-params]
    [cmr.common-app.services.search.query-model :as cqm]
    [cmr.common.concepts :as cc]
+   [cmr.common-app.services.search.elastic-search-index :as elastic-search-index]
    [cmr.common.date-time-parser :as parser]
    [cmr.common.generics :as common-generic]
    [cmr.common.services.errors :as errors]
@@ -18,12 +19,12 @@
 ;; Note: the suffix "-h" on parameters denotes the humanized version of a parameter
 
 (defmethod common-params/param-mappings :autocomplete
-  [_]
+  [_ _]
   {:q :string
    :type :string})
 
 (defmethod common-params/param-mappings :collection
-  [_]
+  [_ _]
   {:archive-center :string
    :attribute :attribute
    :author :string
@@ -107,7 +108,7 @@
    :tool-concept-id :string})
 
 (defmethod common-params/param-mappings :granule
-  [_]
+  [_ _]
   {:attribute :attribute
    :bounding-box :bounding-box
    :browsable :boolean
@@ -151,12 +152,12 @@
    :simplify-shapefile :boolean})
 
 (defmethod common-params/param-mappings :tag
-  [_]
+  [_ _]
   {:tag-key :string
    :originator-id :string})
 
 (defmethod common-params/param-mappings :variable
-  [_]
+  [_ _]
   {:variable-name :string
    :alias :string
    :name :string
@@ -170,7 +171,7 @@
    :measurement-identifiers :measurement-identifiers})
 
 (defmethod common-params/param-mappings :service
-  [_]
+  [_ _]
   {:name :string
    :type :string
    :provider :string
@@ -179,7 +180,7 @@
    :keyword :keyword})
 
 (defmethod common-params/param-mappings :tool
-  [_]
+  [_ _]
   {:name :string
    :provider :string
    :native-id :string
@@ -187,7 +188,7 @@
    :keyword :keyword})
 
 (defmethod common-params/param-mappings :subscription
-  [_]
+  [_ _]
   {:subscription-name :string
    :name :string
    :type :string
@@ -198,29 +199,38 @@
    :concept-id :string
    :keyword :keyword})
 
-;; TODO - generic concept work, these are the base parameters, we still need to 
-;; add additional search parameters dynamically based off each generic concept's index.json
-;; before trying with hardcoded grid value
-(doseq [concept-type (cc/get-generic-concept-types-array)]
-  (defmethod common-params/param-mappings concept-type
-    [_]
-    (merge {:name :string
-            :id :string
-            :provider :string
-            :native-id :string
-            :concept-id :string} (common-generic/generic-custom-param-mappings concept-type))))
-
-
 ;; (doseq [concept-type (cc/get-generic-concept-types-array)]
 ;;   (defmethod common-params/param-mappings concept-type
-;;     [_]
-;;     {:name :string
-;;      :id :string
-;;      :provider :string
-;;      :native-id :string
-;;      :concept-id :string
-;;      :coordinatereferencesystemid-type :string
-;;      :coordinatereferencesystem :string}))
+;;     [_ context-search-params]
+;;     (let
+;;      [pulled-out-context-obj ((keyword concept-type) (elastic-search-index/context->generic-search-parameters context-search-params))
+;;       _(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
+;;       _(println "This is the formatted context object in conversion.clj" (common-generic/generic-custom-param-mappings-type pulled-out-context-obj))]
+;;       (merge {:name :string
+;;               :id :string
+;;               :provider :string
+;;               :native-id :string
+;;               :concept-id :string
+;;               :epgscode :string} (common-generic/generic-custom-param-mappings concept-type)))))
+
+;; TODO remove the old one
+(doseq [concept-type (cc/get-generic-concept-types-array)]
+  (defmethod common-params/param-mappings concept-type
+    [_ context-search-params]
+    (let
+     [pulled-out-context-obj ((keyword concept-type) (elastic-search-index/context->generic-search-parameters context-search-params))
+      _(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
+      formatted-parameters-wtih-mapping-type (common-generic/generic-custom-param-mappings-type pulled-out-context-obj)
+      _(println "This is the formatted parameters with mapping in conversion.clj " formatted-parameters-wtih-mapping-type)]
+      (merge {:name :string
+              :id :string
+              :provider :string
+              :native-id :string
+              :concept-id :string
+              :epgscode :string
+              :edslongname :string} formatted-parameters-wtih-mapping-type))))
+
+
 
 (defmethod common-params/always-case-sensitive-fields :collection
   [_]
@@ -236,8 +246,8 @@
 
 (def collection-only-params
   "List of parameters that are valid in collection query models, but not in granule query models."
-  (let [granule-param-mappings (common-params/param-mappings :granule)
-        collection-param-mappings (common-params/param-mappings :collection)
+  (let [granule-param-mappings (common-params/param-mappings :granule "")
+        collection-param-mappings (common-params/param-mappings :collection "") 
         do-not-exist-for-granules (set/difference (set (keys collection-param-mappings))
                                                   (set (keys granule-param-mappings)))
         collection-query-params (keep (fn [[k v]]
@@ -255,7 +265,7 @@
 
 (def granule-param-names
   "Set of granule search parameter names."
-  (set (keys (common-params/param-mappings :granule))))
+  (set (keys (common-params/param-mappings :granule ""))))
 
 (defmulti tag-param->condition
   "Convert tag param and value into query condition"
@@ -571,7 +581,7 @@
                                  :subscription params)]
     [(dissoc params :all-revisions)
      (merge query-attribs {:all-revisions? (= "true" (:all-revisions params))})]))
-
+; TODO: Generic work
 (doseq [concept-type-key (cc/get-generic-concept-types-array)]
   (defmethod common-params/parse-query-level-params concept-type-key
     [concept-type params]

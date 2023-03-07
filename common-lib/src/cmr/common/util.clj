@@ -344,6 +344,11 @@
   [m]
   (map-keys csk/->kebab-case-keyword m))
 
+(defn map-keys->camel-case
+  "Converts map keys to kebab-case"
+  [m]
+  (map-keys csk/->camelCase m))
+
 (defn mapcatv
   "An eager version of mapcat that returns a vector of the results."
   [f sequence]
@@ -1093,7 +1098,3 @@
   "Html escape the given string. it is used to deal with potential xss issues in user input."
   [s]
   (hp-util/escape-html s))
-
-(defn map-function-on-map-vals [m f]
-  (reduce (fn [altered-map [k v]] (assoc altered-map k (f v))) {} m))
-
