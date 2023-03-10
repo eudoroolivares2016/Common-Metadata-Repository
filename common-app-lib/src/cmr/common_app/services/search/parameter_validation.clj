@@ -55,18 +55,24 @@
   [params1 params2]
   (merge-with set/union params1 params2))
 
+;; TODO This is hte one for the parameter_validation
+
+;; TODO context obj 
 (defmulti params-config
   "Returns the parameter config for the given concept type. Parameters config should be a map with
    keys like that of basic-params-config."
-  by-concept-type)
+  (fn [concept-type context]
+    concept-type))
 
 (def specific-params-config
   "Looks up the parameter validation config for the given concept type and parameter validation type
    and returns the set of parameters that match. Memoized to avoid multimethod performance lookup
    penalties."
   (memoize
-   (fn [concept-type param-type]
-     (or (get (params-config concept-type) param-type)
+   (fn [concept-type param-type generic-search-parameters]
+     ;; (println "Context in specific params-config" generic-search-parameters)
+     ;; TODO: this function is called here we should refactor so it only has one arguement
+     (or (get (params-config concept-type generic-search-parameters) param-type)
          (throw (Exception.
                  (format "No parameter validation config found for [%s] with concept-type [%s]"
                          (pr-str param-type) (pr-str concept-type))))))))
@@ -74,28 +80,32 @@
 (defn single-value-validation
   "Validates that parameters which, if present, must have a single value and cannot not be
   passed as a vector of values."
-  [concept-type params]
-  (->> (select-keys params (specific-params-config concept-type :single-value))
+  (
+  [concept-type params & context]
+  (->> (select-keys params (specific-params-config concept-type :single-value context))
        (filter #(sequential? (second %)))
        (map first)
-       (map #(format "Parameter [%s] must have a single value." (csk/->snake_case_string %)))))
+       (println (:system context))
+       (map #(format "Parameter [%s] must have a single value." (csk/->snake_case_string %))))))
 
 (defn multiple-value-validation
   "Validates that parameters which, if present, must have a single value or a vector of values."
-  [concept-type params]
-  (->> (select-keys params (specific-params-config concept-type :multiple-value))
+  (
+  [concept-type params & context]
+  (let [ generic-search-parameter (:generic-search-parameters-map (:system (first context)))]
+   (->> (select-keys params (specific-params-config concept-type :multiple-value context))
        (filter #(not (or (string? (second %)) (sequential? (second %)))))
        (map first)
        (map #(format "Parameter [%s] must have a single value or multiple values."
-                     (csk/->snake_case_string %)))))
+                     (csk/->snake_case_string %)))))))
 
 (defn validate-boolean-param
-  "Validates a boolean parameter has a value of true or false."
-  [param _concept-type params]
+  "Validates a boolean parameter has a value of true or false." 
+  ([param _concept-type params & context]
   (when-let [value (get params param)]
     (when-not (contains? #{"true" "false"} value)
       [(format "Parameter %s must take value of true or false but was [%s]"
-               (csk/->snake_case_string param) value)])))
+               (csk/->snake_case_string param) value)]))))
 
 (defn- get-ivalue-from-params
   "Get a value from the params as an Integer or nil value. Throws NumberFormatException
@@ -108,21 +118,24 @@
 
 (defn concept-id-validation
   "Validates the concept-id(s)"
-  [_concept-type params]
+  ([_concept-type params]
+   (concept-id-validation _concept-type params ""))
+   
+  ([_concept-type params context]
   ;; concept-ids can be either a vector or a single value.
-  (when-let [concept-ids (util/seqify (:concept-id params))]
-    (mapcat cc/concept-id-validation concept-ids)))
+   (when-let [concept-ids (util/seqify (:concept-id params))]
+     (mapcat cc/concept-id-validation concept-ids))))
 
 (defn page-size-validation
   "Validates that the page-size (if present) is a number in the valid range."
-  [_concept-type params]
-  (let [page-size-errors [(str "page_size must be a number between 0 and " max-page-size)]]
-    (try
-      (when-let [page-size-i (get-ivalue-from-params params :page-size)]
-        (when (or (neg? page-size-i) (> page-size-i max-page-size))
-          page-size-errors))
-      (catch NumberFormatException e
-        page-size-errors))))
+  ([_concept-type params & context]
+   (let [page-size-errors [(str "page_size must be a number between 0 and " max-page-size)]]
+     (try
+       (when-let [page-size-i (get-ivalue-from-params params :page-size)]
+         (when (or (neg? page-size-i) (> page-size-i max-page-size))
+           page-size-errors))
+       (catch NumberFormatException e
+         page-size-errors)))))
 
 (defn- offset-error-message
   []
@@ -130,29 +143,31 @@
 
 (defn offset-validation
   "Returns a seq of any errors in the offset parameter"
-  [_ params]
-  (if (and (:offset params) (:page-num params))
-    ["Only one of offset or page-num may be specified"]
-    (try
-      (when-let [n (get-ivalue-from-params params :offset)]
-        (when-not (<= 0 n (search-paging-depth-limit))
-          [(offset-error-message)]))
-      (catch NumberFormatException _
-        [(offset-error-message)]))))
-
+  ([_concept-type params & context]
+   (if (and (:offset params) (:page-num params))
+     ["Only one of offset or page-num may be specified"]
+     (try
+       (when-let [n (get-ivalue-from-params params :offset)]
+         (when-not (<= 0 n (search-paging-depth-limit))
+           [(offset-error-message)]))
+       (catch NumberFormatException _
+         [(offset-error-message)])))))
+;; TODO: does this param need to be renamed
 (defn page-num-validation
   "Validates that the page-num (if present) is a number in the valid range."
-  [_concept-type params]
+  ([_ params]
+   (page-num-validation _ params ""))
+ ( [_ params context]
   (try
     (when-let [page-num-i (get-ivalue-from-params params :page-num)]
       (when (> 1 page-num-i)
         ["page_num must be a number greater than or equal to 1"]))
     (catch NumberFormatException e
-      ["page_num must be a number greater than or equal to 1"])))
+      ["page_num must be a number greater than or equal to 1"]))))
 
 (defn paging-depth-validation
   "Validates that the paging depths (page-num * page-size) does not exceed a set limit."
-  [_concept-type params]
+  ([_concept-type params & context]
   (try
     (let [limit (search-paging-depth-limit)
           page-size (get-ivalue-from-params params :page-size)
@@ -172,40 +187,40 @@
                    limit)])))
     (catch NumberFormatException e
       ;; This should be handled separately by page-size and page-num validiation
-      [])))
+      []))))
 
 (defn scroll-enabled-validation
   "Validates that scrolling is enabled if the scroll parameter is true or defer"
-  [_concept-type params]
-  (when-let [scroll (:scroll params)]
-    (when (and (contains? #{"true" "defer"} (string/lower-case scroll))
-               (not (scrolling-enabled)))
-      ["Scrolling is disabled."])))
+  ([_concept-type params & context]
+   (when-let [scroll (:scroll params)]
+     (when (and (contains? #{"true" "defer"} (string/lower-case scroll))
+                (not (scrolling-enabled)))
+       ["Scrolling is disabled."]))))
 
 (defn scroll-validation
   "Validates the the scroll parameter (if present) is 'true', 'false', or 'defer'."
-  [_concept-type params]
-  (when-let [value (:scroll params)]
-    (when-not (contains? #{"true" "false" "defer"} value)
-      [(format "Parameter scroll must take value of true, false, or defer but was [%s]" value)])))
+   ([_concept-type params & context]
+    (when-let [value (:scroll params)]
+      (when-not (contains? #{"true" "false" "defer"} value)
+        [(format "Parameter scroll must take value of true, false, or defer but was [%s]" value)]))))
 
 (defn scroll-excludes-page-num-validation
   "Validates that page-num is not present if scroll is true."
-  [_concept-type params]
-  (let [{:keys [scroll page-num]} params]
-    (when (and scroll
-               page-num
-               (= "true" (string/lower-case scroll)))
-      ["page_num is not allowed with scrolling"])))
+  ([_concept-type params & context]
+   (let [{:keys [scroll page-num]} params]
+     (when (and scroll
+                page-num
+                (= "true" (string/lower-case scroll)))
+       ["page_num is not allowed with scrolling"]))))
 
 (defn scroll-excludes-offset-validation
   "Validates that offset is not present if scroll is true."
-  [_concept-type params]
-  (let [{:keys [scroll offset]} params]
-    (when (and scroll
-               offset
-               (= "true" (string/lower-case scroll)))
-      ["offset is not allowed with scrolling"])))
+  ([_concept-type params & context]
+   (let [{:keys [scroll offset]} params]
+     (when (and scroll
+                offset
+                (= "true" (string/lower-case scroll)))
+       ["offset is not allowed with scrolling"]))))
 
 (def string-param-options #{:pattern :ignore-case})
 (def pattern-option #{:pattern})
@@ -217,15 +232,20 @@
 
 (defmulti valid-parameter-options
   "Returns a map of parameter name to the set of option keys that are allowed for that parameter."
-  by-concept-type)
+  (fn [concept-type context]
+    concept-type))
 
 (defn parameter-options-validation
   "Validates that no invalid parameter names in the options were supplied"
-  [concept-type params]
+  ([concept-type params]
+   (parameter-options-validation concept-type params ""))
+ ( [concept-type params context]
   (when-let [options (:options params)]
     (let [always-case-sensitive-fields (specific-params-config
-                                        concept-type :always-case-sensitive)
-          valid-options (valid-parameter-options concept-type)]
+                                        concept-type :always-case-sensitive context)
+          valid-options (valid-parameter-options concept-type context)
+          ;; _(println "The context in parameter-options-validation" context)
+          ]
       (mapcat
        (fn [[param settings]]
          (if-not (map? settings)
@@ -241,7 +261,7 @@
                  (map #(msg/invalid-opt-for-param param %)
                       (set/difference (set (keys settings))
                                       valid-options)))))))
-       options))))
+       options)))))
 
 (defmulti valid-sort-keys
   "Returns the sort keys that are valid with the given concept type"
@@ -253,7 +273,9 @@
 
 (defn sort-key-validation
   "Validates the sort-key parameter if present"
-  [concept-type params]
+  ([_concept-type params]
+   (sort-key-validation _concept-type params ""))
+ ( [concept-type params context]
   (if-let [sort-key (:sort-key params)]
     (let [valid-keys (valid-sort-keys concept-type)
           sort-keys (if (sequential? sort-key) sort-key [sort-key])]
@@ -262,13 +284,14 @@
                   (when-not (valid-keys (keyword field))
                     [(msg/invalid-sort-key (csk/->snake_case_string field) concept-type)])))
               sort-keys))
-    []))
+    [])))
 ;; TODO: the parameters that are passed in
 (def concept-type->valid-param-names
   "A set of the valid parameter names for the given concept-type."
   (memoize
-   (fn [concept-type]
-     (set (keys (p/param-mappings concept-type ""))))))
+   (fn [concept-type context]
+     ;; TODO: Why
+     (set (keys (p/param-mappings concept-type context))))))
 
 (defmulti valid-query-level-params
   "Returns a set of parameter names that are valid at the query level"
@@ -284,13 +307,15 @@
 
 (defn unrecognized-params-validation
   "Validates that no invalid parameters were supplied"
-  [concept-type params]
+  ([_concept-type params]
+   (unrecognized-params-validation _concept-type params ""))
+  ([concept-type params context]
   ;; TODO: GRID This is wehre the generics erro is coming form
   (map #(format "Parameter [%s] was not recognized. for generic?" (csk/->snake_case_string %))
    (set/difference (set (keys params))
                    (set/union standard-valid-params
-                              (concept-type->valid-param-names concept-type)
-                              (valid-query-level-params concept-type)))))
+                              (concept-type->valid-param-names concept-type context)
+                              (valid-query-level-params concept-type))))))
 
 (defmulti valid-query-level-options
   "Returns a set of query level options that are valid."
@@ -302,13 +327,16 @@
 
 (defn unrecognized-params-in-options-validation
   "Validates that no invalid parameters names in the options were supplied"
-  [concept-type params]
+  ([concept-type params]
+   (unrecognized-params-in-options-validation concept-type params nil)
+   )
+  ([concept-type params context]
   (if-let [options (:options params)]
     (map #(str "Parameter [" (csk/->snake_case_string %) "] with option was not recognized.")
          (set/difference (set (keys options))
-                         (set/union (concept-type->valid-param-names concept-type)
+                         (set/union (concept-type->valid-param-names concept-type context)
                                     (valid-query-level-options concept-type))))
-    []))
+    [])))
 
 (defn validate-date-time
   "Validates datetime string is in the given format"
@@ -422,10 +450,16 @@
   "Applies the list of validations to the parameters throwing an exception if there were any errors.
    An optional list of other errors can be passed in to add to the set that's thrown."
   ([concept-type params validations]
-   (validate-parameters concept-type params validations nil))
+   (validate-parameters concept-type params validations nil nil))
   ([concept-type params validations other-errors]
-   (when-let [errors (seq (concat other-errors (mapcat #(% concept-type params) validations)))]
+   (validate-parameters concept-type params validations other-errors nil))
+   
+  ([concept-type params validations other-errors context]
+   ;; calling each of the common validations passing hte concept and params
+   ;; (println "this is the validations obj being processed in validate-parameters" validations)
+   ;; (println "this is the  parsed validations obj being processed in validate-parameters" ((keyword concept-type) validations) params)
+   ;; (println "this is the params obj being processed in validate-parameters" params)
+  ;;  (println "this is the mapcat result concated in validate-parameters" (concat other-errors (mapcat #(% concept-type params) validations)))
+   (
+    when-let [errors (seq (concat other-errors (mapcat #(% concept-type params context) validations)))]
      (errors/throw-service-errors :bad-request errors))))
-
-
-(comment (merge {:a 1} {}))

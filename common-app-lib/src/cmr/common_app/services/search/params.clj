@@ -89,6 +89,7 @@
 (defn- param-name->type
   "Returns the query condition type based on the given concept-type and param-name."
   [concept-type param-name context]
+  ;; (println "context in param-name->type" context)
   (get (param-mappings concept-type context) param-name))
 
 (defmulti parameter->condition

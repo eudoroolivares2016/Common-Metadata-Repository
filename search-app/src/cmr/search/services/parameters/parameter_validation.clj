@@ -29,7 +29,7 @@
    (java.lang Integer Long)))
 ;; TODO: Author is being passed here as well
 (defmethod cpv/params-config :collection
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :echo-compatible :include-granule-counts :include-has-granules
@@ -46,7 +46,7 @@
     :disallow-pattern #{:echo-collection-id}}))
 
 (defmethod cpv/params-config :granule
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:echo-compatible :include-facets :shapefile :simplify-shapefile}
@@ -57,7 +57,7 @@
     :disallow-pattern #{:echo-granule-id}}))
 
 (defmethod cpv/params-config :tag
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{}
@@ -67,7 +67,7 @@
 
 ;; CMR-4408 measurement is listed as a parameter here, but is currently only a placeholder.
 (defmethod cpv/params-config :variable
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -76,7 +76,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :service
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -85,7 +85,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :tool
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -94,7 +94,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :subscription
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -103,7 +103,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :autocomplete
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{}
@@ -112,16 +112,42 @@
     :disallow-pattern #{}}))
 ;; TODO: Generics
 ;; merges the parameters in the generic with the basic
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod cpv/params-config concept-type
+;;     [_ generic-search-parameters]
+;;     (cpv/merge-params-config
+;;      cpv/basic-params-config
+;;      (let
+;;       [;; _(println "Probably not going to work but, context in the mutliple value parameter_validation" generic-search-parameters)
+;;        concept-type-parameters-map (into #{} (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameters)))
+;;        ;;_(println "Probably not going to work but, context in the bottom after mapping" concept-type-parameters-map)
+;;        ]
+;;       {:single-value #{:keyword :all-revisions}
+;;       :always-case-sensitive #{}
+;;       :disallow-pattern #{}
+;;       :multiple-value (set/union #{:name :provider :native-id :concept-id :id :epgscode :edslongname}
+;;                                   (into #{} (common-generic/format-search-parameter-keys concept-type)))}))))
+
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/params-config concept-type
-    [_]
+    [_ context]
     (cpv/merge-params-config
      cpv/basic-params-config
-     {:single-value #{:keyword :all-revisions}
-      :always-case-sensitive #{}
-      :disallow-pattern #{}
-      :multiple-value (set/union #{:name :provider :native-id :concept-id :id :epgscode :edslongname}
-                                  (into #{} (common-generic/format-search-parameter-keys concept-type)))})))
+     (let
+      [;; _(println "Probably not going to work but, context in the mutliple value parameter_validation" generic-search-parameters)
+       ;; parse it at this layer
+       generic-search-parameter (:generic-search-parameters-map (:system (first context)))
+       
+       concept-type-parameters-map (into #{} (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameter)))
+       _(println "passed down context obj generic search parameter in cpv/params-config generic " generic-search-parameter)
+       ]
+       {:single-value #{:keyword :all-revisions}
+        :always-case-sensitive #{}
+        :disallow-pattern #{}
+        :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
+                                   concept-type-parameters-map)}))))
+
+
 (def exclude-params
   "Map of concept-type to parameters which can be used to exclude items from results."
   {:collection #{:tag-key}
@@ -132,7 +158,7 @@
 (def highlights-option #{:begin-tag :end-tag :snippet-length :num-snippets})
 
 (defmethod cpv/valid-parameter-options :collection
-  [_]
+  [_ _]
   {:archive-center cpv/string-param-options
    :attribute exclude-plus-or-option
    ;; TODO: Here author is being explictly called
@@ -203,7 +229,7 @@
    :tool-concept-id cpv/and-option})
 
 (defmethod cpv/valid-parameter-options :granule
-  [_]
+  [_ _]
   {:attribute exclude-plus-or-option
    :campaign cpv/string-plus-and-options
    :collection-concept-id cpv/pattern-option
@@ -238,12 +264,12 @@
    :version cpv/string-param-options})
 
 (defmethod cpv/valid-parameter-options :tag
-  [_]
+  [_ _]
   {:tag-key cpv/pattern-option
    :originator-id cpv/pattern-option})
 
 (defmethod cpv/valid-parameter-options :variable
-  [_]
+  [_ _]
   {:name cpv/string-param-options ;; name is the alias to variable-name
    :variable-name cpv/string-param-options
    :full-path cpv/string-param-options
@@ -253,20 +279,20 @@
    :measurement-identifiers cpv/string-plus-or-options})
 
 (defmethod cpv/valid-parameter-options :service
-  [_]
+  [_ _]
   {:name cpv/string-param-options
    :type cpv/string-param-options
    :native-id cpv/string-param-options
    :provider cpv/string-param-options})
 
 (defmethod cpv/valid-parameter-options :tool
-  [_]
+  [_ _]
   {:name cpv/string-param-options
    :native-id cpv/string-param-options
    :provider cpv/string-param-options})
 
 (defmethod cpv/valid-parameter-options :subscription
-  [_]
+  [_ _]
   {:name cpv/string-param-options
    :subscription-name cpv/string-param-options
    :subscriber-id cpv/string-param-options
@@ -276,26 +302,43 @@
    :provider cpv/string-param-options})
 
 (defmethod cpv/valid-parameter-options :autocomplete
-  [_]
+  [_ _]
   {:q cpv/string-param-options
    :type cpv/string-plus-or-options})
 
 ;; merge this map with the list of parameters it was hardcoded
 ;; TODO: we should investigate that everything is really working here
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod cpv/valid-parameter-options concept-type
+;;     [_]
+;;     (merge
+;;      {:name cpv/string-param-options
+;;      :native-id cpv/string-param-options
+;;      :provider cpv/string-param-options
+;;      :id cpv/string-param-options
+;;      :epgscode cpv/string-param-options
+;;      :edslongname cpv/string-param-options}
+;;      ;; TODO Generic Work: Right now we are setting all of the params to use the
+;;      ;; same config we should have this as a field in the index.json
+;;            (zipmap (vec
+;;                    (common-generic/format-search-parameter-keys concept-type)) (repeat cpv/string-param-options)))))
+
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-parameter-options concept-type
-    [_]
-    (merge
+    [_ context]
+    (let [generic-search-parameter (:generic-search-parameters-map (:system context))
+          _ (println "The passed down context value in cpv/valid-parameter-options for generics" generic-search-parameter)]
+     (merge
      {:name cpv/string-param-options
-     :native-id cpv/string-param-options
-     :provider cpv/string-param-options
-     :id cpv/string-param-options
-     :epgscode cpv/string-param-options
-     :edslongname cpv/string-param-options}
+      :native-id cpv/string-param-options
+      :provider cpv/string-param-options
+      :id cpv/string-param-options}
      ;; TODO Generic Work: Right now we are setting all of the params to use the
      ;; same config we should have this as a field in the index.json
-           (zipmap (vec
-                   (common-generic/format-search-parameter-keys concept-type)) (repeat cpv/string-param-options)))))
+      (zipmap (vec (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameter))) (repeat cpv/string-param-options))))))
+
+
+
 
 (defmethod cpv/valid-query-level-params :collection
   [_]
@@ -435,7 +478,7 @@
 (defn- temporal-format-validation
   "Validates that temporal datetime parameter conforms to the :date-time-no-ms format,
   start-day and end-day are integer between 1 and 366"
-  [concept-type params]
+  [concept-type params & context]
   (when-let [temporal (:temporal params)]
     (let [temporal (if (sequential? temporal)
                      temporal
@@ -460,7 +503,7 @@
 
 (defn- updated-since-validation
   "Validates updated-since parameter conforms to formats in data-time-parser NS"
-  [concept-type params]
+  [concept-type params & context]
   (when-let [param-value (:updated-since params)]
     (if (and (sequential? (:updated-since params)) (> (count (:updated-since params)) 1))
       ["Search not allowed with multiple updated_since values"]
@@ -670,10 +713,13 @@
               [(str "Exclude collection is not supported, " exclude-kv)])
             ["Invalid format for exclude parameter, must be in the format of exclude[name][]=value"]))
         [(msg/invalid-exclude-param-msg invalid-exclude-params)]))))
-
+;; This currently has two arguemtns but, it may need a third
 (defn- boolean-value-validation
   "Validates that all of the boolean parameters have values of true, false or unset."
-  [concept-type params]
+  ([concept-type params]
+   (boolean-value-validation concept-type params nil)
+   )
+  ([concept-type params context]
   (let [bool-params (select-keys params [:downloadable :browsable :include-granule-counts
                                          :include-has-granules :has-granules :hierarchical-facets
                                          :include-highlights :all-revisions :has-opendap-url
@@ -683,7 +729,7 @@
         (when-not (contains? #{"true" "false" "unset"} (when value (s/lower-case value)))
           [(format "Parameter %s must take value of true, false, or unset, but was [%s]"
                    (csk/->snake_case_string param) value)]))
-      bool-params)))
+      bool-params))))
 
 (defn- collection-include-facets-validation
   "Validates that the include_facets parameter has a value of true, false or v2."
@@ -840,7 +886,7 @@
 (defn- boosts-validation
   "Validates that all the provided fields in the boosts parameter are valid and that the values
   are numeric."
-  [concept-type params]
+  [concept-type params & context]
   (let [boosts (:boosts params)]
     (keep (fn [[field value]]
             (if (or (field k2e/default-boosts)
@@ -882,6 +928,7 @@
                           [circle-value])]
       (mapcat validate-circle-value circle-values))))
 
+;; TODO put this back to a defn
 (def parameter-validations
   "Lists of parameter validation functions by concept type"
   (merge
@@ -1001,26 +1048,43 @@
 (defn- validate-parameter-data-types
   "Validates data types of parameters.  Unlike other validations, this returns a tuple of
   [safe-params errors] where errors contains the usual list of errors and safe-params
-  contains only params whose data type is correct.  Dissoc'ing invalid data types from
+  contains only params whose data type is correct. Dissoc'ing invalid data types from
   the list allows other validations to make assumptions about their shapes / types."
   [params]
   (cpv/apply-type-validations params parameter-data-type-validations))
+;; TODO: calls common function
 
+
+;; TODO can we refactor to get rid of this
 (defn validate-parameters
   "Validates parameters. Throws exceptions to send to the user. Returns parameters if validation
   was successful so it can be chained with other calls."
-  [concept-type params]
+  ([concept-type params]
+   (validate-parameters concept-type params nil)
+   )
+  ([concept-type params context]
   (let [[safe-params type-errors] (validate-parameter-data-types params)]
     (cpv/validate-parameters
-     concept-type safe-params (parameter-validations concept-type) type-errors))
-  params)
+     ;; TODO: This concept-type params -validations
+     concept-type safe-params (parameter-validations concept-type) type-errors context))))
+
+;; TODO: Override this function
+(defn  validate-parameters-2
+  [concept-type context params]
+  ;; (println "The arguments to spogne")
+  ;; (println concept-type)
+  ;; (println (:generic-search-parameters-map (:system context)))
+  ;; (println params)
+  (validate-parameters concept-type params context))
+
+(comment (validate-parameters-2 1 2 3))
 
 (defn validate-standard-query-parameters
   "Validates the query parameters passed in with an AQL or JSON search.
   Throws exceptions to send to the user. Returns parameters if validation
   was successful so it can be chained with other calls."
-  [concept-type params]
-  (cpv/validate-parameters concept-type params standard-query-parameter-validations)
+  [concept-type params context]
+  (cpv/validate-parameters concept-type params standard-query-parameter-validations context)
   params)
 
 (defn validate-timeline-parameters
@@ -1175,3 +1239,21 @@
                         deleted-grans-revision-date-range-validation])]
     (when (seq errors)
       (errors/throw-service-errors :bad-request errors))))
+(
+ comment
+
+ (seq (concat (:hasi "yo") (mapcat #((% {:epgscode "hello"})) (:grid parameter-validations))))
+
+ 
+ (def generic-param-map {:grid [{:Description "The exposed search-parameter", :Type "search", :Field "CoordinateReferenceSystemID-Code", :Name "epgscode", :Configuration {:Operators ["or"], :Mapping "string"}} {:Description "The exposed search-parameter long-name", :Type "search", :Field "Long-Name", :Name "edslongname", :Configuration {:Operators ["and"], :Mapping "string"}}], :data-quality-summary [], :order-option [], :service-entry [], :service-option []})
+       
+ ;; concept-type-parameters-map (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameters))
+
+;; (set/union #{:name :provider :native-id :concept-id :id} (into #{} (common-generic/generic-custom-param-mappings-no-formatting (:grid generic-param-map))))
+
+ (zipmap (vec (common-generic/generic-custom-param-mappings-no-formatting (:grid generic-param-map))) (repeat cpv/string-param-options))
+ 
+)
+
+
+

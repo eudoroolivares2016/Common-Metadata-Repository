@@ -43,33 +43,33 @@
   (testing "invalid options param args"
     (is (= [(cmsg/invalid-opt-for-param :entry-title :foo)]
            (cpv/parameter-options-validation :collection {:entry-title "fdad"
-                                                          :options {:entry-title {:foo "true"}}}))))
+                                                          :options {:entry-title {:foo "true"}}} ""))))
 
   (testing "for a parameter requiring a single value validating a value vector returns an error"
     (is (= ["Parameter [keyword] must have a single value."]
-           (cpv/single-value-validation :collection {:keyword ["foo"]}))))
+           (cpv/single-value-validation :collection {:keyword ["foo"]} ""))))
   (testing "for multiple parameters requiring single values validating value vectors returns multiple errors"
     (is (= ["Parameter [page_size] must have a single value."
             "Parameter [keyword] must have a single value."]
-           (cpv/single-value-validation :collection {:keyword ["foo"] :page-size [10] :platform ["bar"]}))))
+           (cpv/single-value-validation :collection {:keyword ["foo"] :page-size [10] :platform ["bar"]} ""))))
   (testing "for a parameter allowing multiple values validating a value vector returns no error"
     (is (= []
-           (cpv/single-value-validation :collection {:platform ["bar"]}))))
+           (cpv/single-value-validation :collection {:platform ["bar"]} ""))))
   (testing "for a parameter requiring a single value validating a single value returns no error"
     (is (= []
-           (cpv/single-value-validation :collection {:keyword "foo"}))))
+           (cpv/single-value-validation :collection {:keyword "foo"} ""))))
   (testing "for a parameter requiring a single value validating no value returns no error"
     (is (= []
-           (cpv/single-value-validation :collection {}))))
+           (cpv/single-value-validation :collection {} ""))))
   (testing "for a parameter requiring vector of values validating a value map returns an error"
     (is (= ["Parameter [concept_id] must have a single value or multiple values."]
-           (cpv/multiple-value-validation :collection {:concept-id {0 "C1-PROV1"}}))))
+           (cpv/multiple-value-validation :collection {:concept-id {0 "C1-PROV1"}} ""))))
   (testing "for multiple parameters requiring vector of values validating value maps returns multiple errors"
     (is (= ["Parameter [concept_id] must have a single value or multiple values."
             "Parameter [platform] must have a single value or multiple values."]
            (cpv/multiple-value-validation :collection {:concept-id {0 "C1-PROV1"}
                                                        :platform {0 "bar"}
-                                                       :page-size 10}))))
+                                                       :page-size 10} ""))))
 
   ;; Page Size
   (testing "Search with large page size"
@@ -270,14 +270,14 @@
 
 (deftest validate-parameters-test
   (testing "parameters are returned when valid"
-    (is (= valid-params (pv/validate-parameters :collection valid-params)))
-    (is (= valid-params (pv/validate-parameters :granule valid-params))))
+    (is (= valid-params (pv/validate-parameters :collection valid-params "")))
+    (is (= valid-params (pv/validate-parameters :granule valid-params ""))))
   (testing "parameters are validated according to concept-type"
-    (is (= {:granule-ur "Dummy"} (pv/validate-parameters :granule {:granule-ur "Dummy"})))
-    (is (thrown? clojure.lang.ExceptionInfo (pv/validate-parameters :collection {:granule-ur "Dummy"}))))
+    (is (= {:granule-ur "Dummy"} (pv/validate-parameters :granule {:granule-ur "Dummy"} "")))
+    (is (thrown? clojure.lang.ExceptionInfo (pv/validate-parameters :collection {:granule-ur "Dummy"} ""))))
   (testing "validation errors (rather than type errors) thrown a vector is supplied for page-num"
     (try
-      (pv/validate-parameters :collection {:page-num [10]})
+      (pv/validate-parameters :collection {:page-num [10]} "")
       (is false "An error should have been thrown.")
       (catch clojure.lang.ExceptionInfo e
         (is (= {:type :bad-request
@@ -287,7 +287,7 @@
     (try
       (pv/validate-parameters :collection {:entry-title "fdad"
                                            :foo 1
-                                           :bar 2})
+                                           :bar 2} "")
       (is false "An error should have been thrown.")
       (catch clojure.lang.ExceptionInfo e
         (is (= {:type :bad-request
@@ -296,13 +296,13 @@
                (update-in (ex-data e) [:errors] set))))))
   (testing "Collection service type parameters."
     (is (= {:service-type "Harmony"}
-           (pv/validate-parameters :collection {:service-type "Harmony"}))))
+           (pv/validate-parameters :collection {:service-type "Harmony"} ""))))
   (testing "Service type parameters."
     (is (= {:type "Harmony"}
-           (pv/validate-parameters :service {:type "Harmony"}))))
+           (pv/validate-parameters :service {:type "Harmony"} ""))))
   (testing "Service failed invalid parameters."
     (try
-      (pv/validate-parameters :service {:foo "Harmony"}))
+      (pv/validate-parameters :service {:foo "Harmony"} ""))
       (is false "An error should have been thrown.")
       (catch clojure.lang.ExceptionInfo e
         (is (= {:type :bad-request

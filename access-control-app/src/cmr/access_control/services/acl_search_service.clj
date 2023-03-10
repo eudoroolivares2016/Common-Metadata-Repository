@@ -24,7 +24,7 @@
    cmr.access-control.data.acl-json-results-handler))
 
 (defmethod cpv/params-config :acl
-  [_]
+  [_ _]
   (cpv/merge-params-config
     cpv/basic-params-config
     {:single-value #{:include-full-acl :legacy-guid :include-legacy-group-guid}
@@ -38,7 +38,7 @@
   #{:include-full-acl :legacy-guid :include-legacy-group-guid :id :target})
 
 (defmethod cpv/valid-parameter-options :acl
-  [_]
+  [_ _]
   {:permitted-concept-id #{}
    :permitted-group cpv/string-param-options
    :provider cpv/string-param-options
@@ -57,7 +57,7 @@
 
 (defn- permitted-concept-id-validation
   "Validates permitted concept id parameter"
-  [context params]
+  [context params _]
   (when-let [permitted-concept-id (:permitted-concept-id params)]
     (when-not (re-matches #"(C|G)\d+-[A-Za-z0-9_]+" permitted-concept-id)
       [(format "Must be collection or granule concept id.")])))
@@ -104,7 +104,7 @@
                       :1 {:permission \"order\"}}}
 
   which corresponds to acls that grant read permission to guests for order permission (to anyone)."
-  [context params]
+  [context params _]
   (concat (group-permission-parameter-index-validation params)
           (group-permission-parameter-subfield-validation params)
           (group-permission-permission-validation params)))
@@ -123,7 +123,7 @@
 
 (defn- identity-type-validation
   "Validates identity-type parameters."
-  [context params]
+  [context params _]
   (let [identity-types (util/seqify (:identity-type params))]
     (when-let [invalid-types (seq (remove valid-identity-type? identity-types))]
       [(format (str "Parameter identity_type has invalid values [%s]. "
@@ -132,7 +132,7 @@
 
 (defn- include-legacy-group-guid-validation
   "Validates include-legacy-group-guid parameters."
-  [_ params]
+  [_ params _]
   (when (and (= "true" (:include-legacy-group-guid params))
              (not= "true" (:include-full-acl params)))
     ["Parameter include_legacy_group_guid can only be used when include_full_acl is true"]))
@@ -140,7 +140,7 @@
 (defn- target-id-validation
   "Validates that when target-id parameter is specified,
   identity-type=single_instance is also specified"
-  [context params]
+  [context params _]
   (let [target-ids (util/seqify (:target-id params))
         identity-types (util/seqify (:identity-type params))]
     (when (and target-ids
@@ -253,7 +253,7 @@
               (partial cpv/validate-boolean-param :include-full-acl)
               (partial cpv/validate-boolean-param :include-legacy-group-guid)
               include-legacy-group-guid-validation])
-     type-errors))
+     type-errors context))
   params)
 
 (defn search-for-acls

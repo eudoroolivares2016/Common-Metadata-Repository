@@ -51,7 +51,8 @@
    (query-field->elastic-field field concept-type ""))
   ([field concept-type generic-search-param-obj]
   (let [gensearch generic-search-param-obj
-        _(println "The context object that has been passed down from the top" generic-search-param-obj)]
+        ;; _(println "The context object that has been passed down from the top" generic-search-param-obj)
+        ]
    (get (concept-type->field-mappings concept-type generic-search-param-obj) (keyword field) field)
    )))
 

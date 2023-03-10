@@ -164,8 +164,9 @@
         ;; (keyword (:Mapping %))]
     (let [context-obj ((keyword concept-type) context-search-params)
           parsed-context-obj (common-generic/generic-custom-param-mappings-for-reassign-index context-obj)
-          _ (println "The context object has gone to the rename keys in query_to_elastic.clj" context-obj)
-          _ (println "The formatted context object in query_to_elastic.clj" parsed-context-obj)]
+          ;; _ (println "The context object has gone to the rename keys in query_to_elastic.clj" context-obj)
+           _ (println "The formatted context object in query_to_elastic.clj" parsed-context-obj)
+          ]
       ;; Add the custom search-parameters into the map
       (merge {:provider :provider-id :epgscode :coordinatereferencesystemid-code :edslongname :long-name} parsed-context-obj)
       )

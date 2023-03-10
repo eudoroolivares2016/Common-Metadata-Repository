@@ -202,6 +202,14 @@
 ;; This is using the new style
 
 
+(defn generic-custom-param-mappings-no-formatting
+  "Retrieve the generics index as well the type of mapping that it is string etc"
+  [context-object]
+  ;; Dig into the configuration and pull out the mapping for that particular one
+   (map #(keyword (:Name %)) context-object))
+
+
+
 
 (defn generic-custom-param-mappings-type
   "Retrieve the generics index as well the type of mapping that it is string etc"

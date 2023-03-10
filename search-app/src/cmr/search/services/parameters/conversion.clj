@@ -219,16 +219,15 @@
     [_ context-search-params]
     (let
      [pulled-out-context-obj ((keyword concept-type) (elastic-search-index/context->generic-search-parameters context-search-params))
-      _(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
+      ;; _(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
       formatted-parameters-wtih-mapping-type (common-generic/generic-custom-param-mappings-type pulled-out-context-obj)
       _(println "This is the formatted parameters with mapping in conversion.clj " formatted-parameters-wtih-mapping-type)]
+      ;; removingthis was causing issues somehows
       (merge {:name :string
               :id :string
               :provider :string
               :native-id :string
-              :concept-id :string
-              :epgscode :string
-              :edslongname :string} formatted-parameters-wtih-mapping-type))))
+              :concept-id :string} formatted-parameters-wtih-mapping-type))))
 
 
 

@@ -171,7 +171,7 @@
         (lp/process-legacy-multi-params-conditions concept-type)
         (lp/replace-science-keywords-or-option concept-type)
         (psn/replace-provider-short-names context)
-        (pv/validate-parameters concept-type))))
+        (pv/validate-parameters-2 concept-type context))))
 
 (defn make-concepts-query
   "Utility function for generating an elastic-ready query."
@@ -187,6 +187,7 @@
     concept-type
     (create-and-validate-concepts-query-parameters
      context concept-type params tag-data))))
+
 ;; TODO This is the search position that sets parametrs
 (defn generate-query-conditions-for-parameters
   "Given the query params, generate the conditions for elastic search. Returns
@@ -261,7 +262,7 @@
   (let [params (-> params
                    sanitize-aql-params
                    lp/replace-parameter-aliases)
-        [query-creation-time query] (u/time-execution (a/parse-aql-query params aql))
+        [query-creation-time query] (u/time-execution (a/parse-aql-query context params aql))
         concept-type (:concept-type query)
         [find-concepts-time results] (u/time-execution
                                       (common-search/find-concepts context

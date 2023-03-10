@@ -283,7 +283,7 @@
 ;; Search functions
 
 (defmethod cpv/params-config :access-group
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:include-members}
@@ -297,7 +297,7 @@
   #{:include-members})
 
 (defmethod cpv/valid-parameter-options :access-group
-  [_]
+  [_ _]
   {:provider cpv/string-param-options
    :name cpv/string-param-options
    :legacy-guid cpv/string-param-options
@@ -319,9 +319,9 @@
      :access-group safe-params
      (concat cpv/common-validations
              [(partial cpv/validate-boolean-param :include-members)])
-     type-errors))
+     type-errors context))
   params)
-
+`
 (defmethod common-qm/default-sort-keys :access-group
   [_]
   [{:field :provider-id :order :asc}
