@@ -24,7 +24,8 @@
    cmr.access-control.data.acl-json-results-handler))
 
 (defmethod cpv/params-config :acl
-  [_]
+  ;; TODO I think this needs to be udpated
+  [_ _]
   (cpv/merge-params-config
     cpv/basic-params-config
     {:single-value #{:include-full-acl :legacy-guid :include-legacy-group-guid}
@@ -243,6 +244,7 @@
                                     (partial cpv/validate-map [:options :provider])
                                     (partial cpv/validate-map [:options :permitted-user])
                                     (partial cpv/validate-map [:group_permission])])]
+    ;; TODO: This seems to be where the error is for collections
     (cpv/validate-parameters
      :acl safe-params
      (concat cpv/common-validations

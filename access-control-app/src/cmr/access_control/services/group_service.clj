@@ -283,7 +283,7 @@
 ;; Search functions
 
 (defmethod cpv/params-config :access-group
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:include-members}

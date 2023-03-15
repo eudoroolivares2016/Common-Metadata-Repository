@@ -197,10 +197,10 @@
          generic-concept-param-map (context->generic-search-parameters context)
          highlights :highlight :as execution-params} (query->execution-params query (context->generic-search-parameters context))
         concept-type (:concept-type query)
-        _(println "This is the search context" generic-concept-param-map)
+        ;; _(println "This is the search context" generic-concept-param-map)
         ;; if this is generic rename indexes
         index-info (concept-type->index-info context concept-type query)
-        _ (println "This is the elastic query" elastic-query)
+        ;; _ (println "This is the elastic query" elastic-query)
         query-map (-> elastic-query
                       (merge execution-params)
                       ;; TODO: merge this map with a key renaming scheme
@@ -208,7 +208,7 @@
                       ;; (set/rename-keys {:search-after :search_after :coordinatereferencesystemid-code-lowercase :long_name})
                       ;; rename search-after to search_after for ES execution
                       util/remove-nil-keys)]
-    _ (println "This is the elastic query after re-map" elastic-query)
+    ;; _ (println "This is the elastic query after re-map" elastic-query)
     (info "Executing against indexes [" (:index-name index-info) "] the elastic query:"
            (pr-str elastic-query)
            "with sort" (pr-str sort-params)

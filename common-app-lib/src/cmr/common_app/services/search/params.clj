@@ -89,13 +89,16 @@
 (defn- param-name->type
   "Returns the query condition type based on the given concept-type and param-name."
   [concept-type param-name context]
-  (get (param-mappings concept-type context) param-name))
+  ;; Here context is not a list
+  (println "This is the context in the param-name->type func" (conj () context))
+  (get (param-mappings concept-type (conj () context)) param-name))
 
 (defmulti parameter->condition
   "Converts a parameter into a condition"
   (fn [context concept-type param value options]
     (param-name->type concept-type param context)))
 
+;; TODO: This is where th error is reporting that we are seeing
 (defmethod parameter->condition :default
   [_context concept-type param value options]
   (errors/internal-error!
@@ -112,6 +115,7 @@
 
 (defmethod parameter->condition :string
   [_context concept-type param value options]
+  (println "This is getting called parameter->condition with :string for" concept-type)
   (string-parameter->condition concept-type param value options))
 
 (defmethod parameter->condition :int

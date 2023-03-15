@@ -180,12 +180,15 @@
    :keyword :keyword})
 
 (defmethod common-params/param-mappings :tool
-  [_ _]
-  {:name :string
+  [_ context]
+  (let [
+        ;;_(println "I am in the tool param-mappings this si the context")
+        ]
+   {:name :string
    :provider :string
    :native-id :string
    :concept-id :string
-   :keyword :keyword})
+   :keyword :keyword}))
 
 (defmethod common-params/param-mappings :subscription
   [_ _]
@@ -218,17 +221,23 @@
   (defmethod common-params/param-mappings concept-type
     [_ context-search-params]
     (let
-     [pulled-out-context-obj ((keyword concept-type) (elastic-search-index/context->generic-search-parameters context-search-params))
-      _(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
+     ;; This value is only going to be not nil if a parameter is passed along
+     [
+      ;;_(println "This is the value of the context obj in conversion" context-search-params)
+      ;; in one the conversion is a list in another it is just passed
+      pulled-out-context-obj ((keyword concept-type) (elastic-search-index/context->generic-search-parameters (first context-search-params)))
+      ;;_(println "This is the pull out non-formatted context object in conversion.clj" pulled-out-context-obj)
       formatted-parameters-wtih-mapping-type (common-generic/generic-custom-param-mappings-type pulled-out-context-obj)
-      _(println "This is the formatted parameters with mapping in conversion.clj " formatted-parameters-wtih-mapping-type)]
+      ;;_(println "This is the formatted parameters with mapping in conversion.clj " formatted-parameters-wtih-mapping-type)
+      ;; testingdebugMode {:epgscode :string :edslongname :string}
+      ]
       (merge {:name :string
               :id :string
               :provider :string
               :native-id :string
               :concept-id :string
-              :epgscode :string
-              :edslongname :string} formatted-parameters-wtih-mapping-type))))
+              ;; TODO Somehow when this is hardcoded it works but, if it has to be evaluated it dosen't??
+              } formatted-parameters-wtih-mapping-type))))
 
 
 
@@ -246,8 +255,8 @@
 
 (def collection-only-params
   "List of parameters that are valid in collection query models, but not in granule query models."
-  (let [granule-param-mappings (common-params/param-mappings :granule "")
-        collection-param-mappings (common-params/param-mappings :collection "") 
+  (let [granule-param-mappings (common-params/param-mappings :granule nil)
+        collection-param-mappings (common-params/param-mappings :collection nil) 
         do-not-exist-for-granules (set/difference (set (keys collection-param-mappings))
                                                   (set (keys granule-param-mappings)))
         collection-query-params (keep (fn [[k v]]
@@ -265,7 +274,7 @@
 
 (def granule-param-names
   "Set of granule search parameter names."
-  (set (keys (common-params/param-mappings :granule ""))))
+  (set (keys (common-params/param-mappings :granule nil))))
 
 (defmulti tag-param->condition
   "Convert tag param and value into query condition"

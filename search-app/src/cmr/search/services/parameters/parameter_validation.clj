@@ -29,7 +29,7 @@
    (java.lang Integer Long)))
 ;; TODO: Author is being passed here as well
 (defmethod cpv/params-config :collection
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :echo-compatible :include-granule-counts :include-has-granules
@@ -46,7 +46,7 @@
     :disallow-pattern #{:echo-collection-id}}))
 
 (defmethod cpv/params-config :granule
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:echo-compatible :include-facets :shapefile :simplify-shapefile}
@@ -67,7 +67,7 @@
 
 ;; CMR-4408 measurement is listed as a parameter here, but is currently only a placeholder.
 (defmethod cpv/params-config :variable
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -76,7 +76,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :service
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -85,7 +85,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :tool
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -94,7 +94,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :subscription
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{:keyword :all-revisions}
@@ -103,7 +103,7 @@
     :disallow-pattern #{}}))
 
 (defmethod cpv/params-config :autocomplete
-  [_]
+  [_ _]
   (cpv/merge-params-config
    cpv/basic-params-config
    {:single-value #{}
@@ -112,16 +112,35 @@
     :disallow-pattern #{}}))
 ;; TODO: Generics
 ;; merges the parameters in the generic with the basic
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod cpv/params-config concept-type
+;;     [_ _]
+;;     (cpv/merge-params-config
+;;      cpv/basic-params-config
+;;      {:single-value #{:keyword :all-revisions}
+;;       :always-case-sensitive #{}
+;;       :disallow-pattern #{}
+;;       :multiple-value (set/union #{:name :provider :native-id :concept-id :id :epgscode :edslongname}
+;;                                   (into #{} (common-generic/format-search-parameter-keys concept-type)))})))
+
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/params-config concept-type
-    [_]
+    [_ context]
     (cpv/merge-params-config
      cpv/basic-params-config
-     {:single-value #{:keyword :all-revisions}
-      :always-case-sensitive #{}
-      :disallow-pattern #{}
-      :multiple-value (set/union #{:name :provider :native-id :concept-id :id :epgscode :edslongname}
-                                  (into #{} (common-generic/format-search-parameter-keys concept-type)))})))
+     (let
+      [;; _(println "Probably not going to work but, context in the mutliple value parameter_validation" generic-search-parameters)
+       ;; parse it at this layer
+       generic-search-parameter (:generic-search-parameters-map (:system (first (first context))))
+       ;;  concept-type-parameters-map #{}
+       concept-type-parameters-map (into #{} (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameter)))
+       _ (println "passed down fungusd context obj generic search parameter in cpv/params-config generic " concept-type-parameters-map)]
+       {:single-value #{:keyword :all-revisions}
+        :always-case-sensitive #{}
+        :disallow-pattern #{}
+        :multiple-value (set/union #{:name :provider :native-id :concept-id :id}
+                                   concept-type-parameters-map)}))))
+
 (def exclude-params
   "Map of concept-type to parameters which can be used to exclude items from results."
   {:collection #{:tag-key}
@@ -132,7 +151,7 @@
 (def highlights-option #{:begin-tag :end-tag :snippet-length :num-snippets})
 
 (defmethod cpv/valid-parameter-options :collection
-  [_]
+  [_ _]
   {:archive-center cpv/string-param-options
    :attribute exclude-plus-or-option
    ;; TODO: Here author is being explictly called
@@ -282,20 +301,49 @@
 
 ;; merge this map with the list of parameters it was hardcoded
 ;; TODO: we should investigate that everything is really working here
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod cpv/valid-parameter-options concept-type
+;;     [_]
+;;     (merge
+;;      {:name cpv/string-param-options
+;;      :native-id cpv/string-param-options
+;;      :provider cpv/string-param-options
+;;      :id cpv/string-param-options
+;;      :epgscode cpv/string-param-options
+;;      :edslongname cpv/string-param-options}
+;;      ;; TODO Generic Work: Right now we are setting all of the params to use the
+;;      ;; same config we should have this as a field in the index.json
+;;            (zipmap (vec
+;;                    (common-generic/format-search-parameter-keys concept-type)) (repeat cpv/string-param-options)))))
+
+
+;; (doseq [concept-type (cc/get-generic-concept-types-array)]
+;;   (defmethod cpv/valid-parameter-options concept-type
+;;     [_ context]
+;;     (let [generic-search-parameter (:generic-search-parameters-map (:system (first context)))
+;;           _ (println "The passed down rollercoaster context value in cpv/valid-parameter-options for generics" generic-search-parameter)]
+;;      ;; (merge
+;;       {:name cpv/string-param-options
+;;        :native-id cpv/string-param-options
+;;        :provider cpv/string-param-options
+;;        :id cpv/string-param-options})))
+
 (doseq [concept-type (cc/get-generic-concept-types-array)]
   (defmethod cpv/valid-parameter-options concept-type
-    [_]
-    (merge
-     {:name cpv/string-param-options
-     :native-id cpv/string-param-options
-     :provider cpv/string-param-options
-     :id cpv/string-param-options
-     :epgscode cpv/string-param-options
-     :edslongname cpv/string-param-options}
+    [_ context]
+    (let [generic-search-parameter (:generic-search-parameters-map (:system (first context)))
+          _ (println "The passed down context value in cpv/valid-parameter-options for generics" generic-search-parameter)]
+      (merge
+       {:name cpv/string-param-options
+        :native-id cpv/string-param-options
+        :provider cpv/string-param-options
+        :id cpv/string-param-options}
      ;; TODO Generic Work: Right now we are setting all of the params to use the
      ;; same config we should have this as a field in the index.json
-           (zipmap (vec
-                   (common-generic/format-search-parameter-keys concept-type)) (repeat cpv/string-param-options)))))
+       (zipmap (vec (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameter))) (repeat cpv/string-param-options))))))
+
+
+
 
 (defmethod cpv/valid-query-level-params :collection
   [_]
@@ -435,7 +483,7 @@
 (defn- temporal-format-validation
   "Validates that temporal datetime parameter conforms to the :date-time-no-ms format,
   start-day and end-day are integer between 1 and 366"
-  [concept-type params]
+  [concept-type params & context]
   (when-let [temporal (:temporal params)]
     (let [temporal (if (sequential? temporal)
                      temporal
@@ -460,7 +508,7 @@
 
 (defn- updated-since-validation
   "Validates updated-since parameter conforms to formats in data-time-parser NS"
-  [concept-type params]
+  [concept-type params & context]
   (when-let [param-value (:updated-since params)]
     (if (and (sequential? (:updated-since params)) (> (count (:updated-since params)) 1))
       ["Search not allowed with multiple updated_since values"]
@@ -469,7 +517,7 @@
 
 (defn- tag-data-validation
   "Validates tag-data parameter must be a map"
-  [concept-type params]
+  [concept-type params context]
   (when-let [param-value (:tag-data params)]
     (if (map? param-value)
       ;; validate that tag-value cannot be empty
@@ -503,21 +551,21 @@
 
 (defn- revision-date-validation
   "Validates that revision date parameter contains valid date time strings."
-  [concept-type params]
+  [concept-type params context]
   (sequential-multi-date-validation concept-type params :revision-date))
 
 (defn- production-date-validation
   "Validates that production date parameter contains valid date time strings."
-  [concept-type params]
+  [concept-type params context]
   (sequential-multi-date-validation concept-type params :production-date))
 
 (defn- created-at-validation
   "Validates that created-at parameter contains valid datetime strings."
-  [concept-type params]
+  [concept-type params context]
   (sequential-multi-date-validation concept-type params :created-at))
 
 (defn- attribute-validation
-  [concept-type params]
+  [concept-type params context]
   (when-let [attributes (:attribute params)]
     (if (sequential? attributes)
       (mapcat #(-> % attrib/parse-value :errors) attributes)
@@ -525,27 +573,27 @@
 
 (defn- science-keywords-validation-for-field
   "Performs science keywords subfield validation."
-  [field concept-type params]
+  [field concept-type params context]
   (validation-util/nested-field-validation-for-subfield
    field concept-type params (msg/science-keyword-invalid-format-msg)))
 
 (defn- variables-validation
   "Validates the variables-h search parameters are in the format of e.g.
    variables-h[0][measurement]=value."
-  [concept-type params]
+  [concept-type params context]
   (validation-util/nested-field-validation-for-subfield
    :variables-h concept-type params (msg/variable-invalid-format-msg)))
 
 (defn- temporal-facets-subfields-validation
   "Performs temporal facets subfield validation."
-  [concept-type params]
+  [concept-type params context]
   (validation-util/nested-field-validation-for-subfield
    :temporal-facet concept-type params (msg/temporal-facets-invalid-format-msg)))
 
 (defn- measurement-identifiers-validation
   "Validates the measurement_identifiers search parameters are in the format of e.g.
    measurement_identifiers[0][contextmedium]=value."
-  [concept-type params]
+  [concept-type params context]
   (validation-util/nested-field-validation-for-subfield
    :measurement-identifiers concept-type params (msg/measurement-identifiers-invalid-format-msg)))
 
@@ -587,17 +635,17 @@
 
 (defn- temporal-facet-year-validation
   "Validates that the years provided in all temporal-facet parameters are valid."
-  [concept-type params]
+  [concept-type params context]
   (temporal-facet-date-validation :year concept-type params))
 
 (defn- temporal-facet-month-validation
   "Validates that the months provided in all temporal-facet parameters are valid."
-  [concept-type params]
+  [concept-type params context]
   (temporal-facet-date-validation :month concept-type params))
 
 (defn- temporal-facet-day-validation
   "Validates that the days provided in all temporal-facet parameters are valid."
-  [concept-type params]
+  [concept-type params context]
   (temporal-facet-date-validation :day concept-type params))
 
 ;; This method is for processing legacy numeric ranges in the form of
@@ -625,7 +673,7 @@
 
 (defn- cloud-cover-validation
   "Validates cloud cover range values are numeric"
-  [concept-type params]
+  [concept-type params context]
   (when-let [cloud-cover (:cloud-cover params)]
     (if (string? cloud-cover)
       (cpv/validate-numeric-range-param cloud-cover nil)
@@ -635,7 +683,7 @@
   "Validates that the orbital number is either a single number or a range in the format
   start,stop, or in the catlog-rest style orbit_number[value], orbit_number[minValue],
   orbit_number[maxValue]."
-  [concept-type params]
+  [concept-type params context]
   (when-let [orbit-number-param (:orbit-number params)]
     (if (string? orbit-number-param)
       (cpv/validate-numeric-range-param orbit-number-param on-msg/invalid-orbit-number-msg)
@@ -644,7 +692,7 @@
 (defn- equator-crossing-longitude-validation
   "Validates that the equator-crossing-longitude parameter is a single number or
   a valid range string."
-  [concept-type params]
+  [concept-type params context]
   (when-let [equator-crossing-longitude (:equator-crossing-longitude params)]
     (if (string? equator-crossing-longitude)
       (cpv/validate-numeric-range-param equator-crossing-longitude nil)
@@ -653,13 +701,13 @@
 
 (defn- equator-crossing-date-validation
   "Validates that the equator_crossing_date parameter is a valid date range string."
-  [concept-type params]
+  [concept-type params context]
   (when-let [equator-crossing-date (:equator-crossing-date params)]
     (parser/date-time-range-string-validation equator-crossing-date)))
 
 (defn- exclude-validation
   "Validates that the key(s) supplied in 'exclude' param value are in exclude-params set"
-  [concept-type params]
+  [concept-type params context]
   (when-let [exclude-kv (:exclude params)]
     (let [invalid-exclude-params (set/difference (set (keys exclude-kv))
                                                  (exclude-params concept-type))]
@@ -673,7 +721,7 @@
 
 (defn- boolean-value-validation
   "Validates that all of the boolean parameters have values of true, false or unset."
-  [concept-type params]
+  [concept-type params & context]
   (let [bool-params (select-keys params [:downloadable :browsable :include-granule-counts
                                          :include-has-granules :has-granules :hierarchical-facets
                                          :include-highlights :all-revisions :has-opendap-url
@@ -687,7 +735,7 @@
 
 (defn- collection-include-facets-validation
   "Validates that the include_facets parameter has a value of true, false or v2."
-  [concept-type params]
+  [concept-type params context]
   (when-let [include-facets (:include-facets params)]
     (when-not (contains? #{"true" "false" "v2"} (s/lower-case include-facets))
       [(format "Collection parameter include_facets must take value of true, false, or v2, but was [%s]"
@@ -706,7 +754,7 @@
 
 (defn- collection-facets-size-validation
   "Validates that the facets-size parameter has a value positive integer value."
-  [concept-type params]
+  [concept-type params context]
   (when-let [facets-size (:facets-size params)]
     (when (or (not (map? facets-size))
               (not-all-positive-integer-values? (vals facets-size)))
@@ -718,14 +766,14 @@
 
 (defn- no-facets-size-without-include-facets-v2
   "Validates that the include-facets parameter is set to v2 if facets-size is set."
-  [concept-type params]
+  [concept-type params context]
   (when (and (:facets-size params)
              (not= "v2" (:include-facets params)))
     ["facets_size option is not allowed unless the include_facets is v2."]))
 
 (defn- granule-include-facets-validation
   "Validates that the include_facets parameter has a value of v2."
-  [concept-type params]
+  [concept-type params context]
   (when-let [include-facets (:include-facets params)]
     (when-not (= "v2" (s/lower-case include-facets))
       [(format "Granule parameter include_facets only supports the value v2, but was [%s]"
@@ -738,24 +786,28 @@
     (mapcat #(:errors (spatial-codec/url-decode spatial-type %)) (flatten [spatial-param]))))
 
 (defn- polygon-validation
-  ([params] (polygon-validation nil params))
-  ([_ params] (spatial-validation params :polygon)))
+  ([params context] 
+   (polygon-validation nil params nil))
+  ([_ params context] (spatial-validation params :polygon)))
 
 (defn- bounding-box-validation
-  ([params] (bounding-box-validation nil params))
-  ([_ params] (spatial-validation params :bounding-box)))
+  ([params context] 
+   (bounding-box-validation nil params nil))
+  ([_ params context] (spatial-validation params :bounding-box)))
 
 (defn- point-validation
-  ([params] (point-validation nil params))
-  ([_ params] (spatial-validation params :point)))
+  ([params context] 
+   (point-validation nil params nil))
+  ([_ params context] (spatial-validation params :point)))
 
 (defn- line-validation
-  ([params] (line-validation nil params))
-  ([_ params] (spatial-validation params :line)))
+  ([params context] 
+   (line-validation nil params nil))
+  ([_ params context] (spatial-validation params :line)))
 
 (defn- collection-concept-id-validation
   "Validates the collection-concept-id(s)"
-  [concept-type params]
+  [concept-type params context]
   ;; collection-concept-ids can be either a vector or a single value.
   (when-let [c-concept-ids (util/seqify (:collection-concept-id params))]
     (mapcat (partial cc/concept-id-validation :collection-concept-id) c-concept-ids)))
@@ -793,14 +845,14 @@
 (defn- no-highlight-options-without-highlights-validation
   "Validates that the include-highlights parameter is set to true if any of the highlights
   options params are set."
-  [concept-type params]
+  [concept-type params context]
   (when (and (get-in params [:options :highlights])
              (not= "true" (:include-highlights params)))
     ["Highlights options are not allowed unless the include-highlights is true."]))
 
 (defn- highlights-numeric-options-validation
   "Validates that the highlights option (if present) is an integer greater than zero."
-  [concept-type params]
+  [concept-type params context]
   (keep
    (fn [param]
      (when-let [value (get-in params [:options :highlights param])]
@@ -817,7 +869,7 @@
 
 (defn- include-tags-parameter-validation
   "Validates parameters against result format."
-  [concept-type params]
+  [concept-type params context]
   (concat
    (when (and (not (#{:json :atom :echo10 :dif :dif10 :iso19115 :native} (:result-format params)))
               (not (s/blank? (:include-tags params))))
@@ -840,7 +892,7 @@
 (defn- boosts-validation
   "Validates that all the provided fields in the boosts parameter are valid and that the values
   are numeric."
-  [concept-type params]
+  [concept-type params & context]
   (let [boosts (:boosts params)]
     (keep (fn [[field value]]
             (if (or (field k2e/default-boosts)
@@ -858,7 +910,7 @@
 
 (defn shapefile-format-validation
   "Validates that the shapefile format value is one of the accepted formats"
-  [concept-type params]
+  [concept-type params context]
   (when-let [shapefile-format (get-in params [:shapefile :content-type])]
     (when (not (contains? valid-shapefile-formats shapefile-format))
       [(format "Shapefile format [%s] is not supported. It must be one of %s"
@@ -875,7 +927,7 @@
 
 (defn- circle-values-validation
   "Validates that the circle values are valid"
-  [concept-type params]
+  [concept-type params context]
   (when-let [circle-value (:circle params)]
     (let [circle-values (if (sequential? circle-value)
                           circle-value
@@ -887,7 +939,8 @@
   (merge
    {:collection (concat
                  cpv/common-validations
-                 [boosts-validation
+                 [
+                  boosts-validation
                   temporal-format-validation
                   updated-since-validation
                   revision-date-validation
@@ -914,7 +967,8 @@
                   no-facets-size-without-include-facets-v2
                   collection-facets-size-validation
                   circle-values-validation
-                  shapefile-format-validation])
+                  shapefile-format-validation
+                  ])
     :granule (concat
               cpv/common-validations
               [temporal-format-validation
@@ -1009,17 +1063,26 @@
 (defn validate-parameters
   "Validates parameters. Throws exceptions to send to the user. Returns parameters if validation
   was successful so it can be chained with other calls."
-  [concept-type params]
+  [concept-type params & context]
   (let [[safe-params type-errors] (validate-parameter-data-types params)]
     (cpv/validate-parameters
-     concept-type safe-params (parameter-validations concept-type) type-errors))
+     concept-type safe-params (parameter-validations concept-type) type-errors context))
   params)
+
+(defn  validate-parameters-2
+  [concept-type context params]
+  ;; (println concept-type)
+  ;; (println (:generic-search-parameters-map (:system context)))
+  ;; (println params)
+  (validate-parameters concept-type params context))
+
+;; (comment (validate-parameters-2 1 2 3))
 
 (defn validate-standard-query-parameters
   "Validates the query parameters passed in with an AQL or JSON search.
   Throws exceptions to send to the user. Returns parameters if validation
   was successful so it can be chained with other calls."
-  [concept-type params]
+  [concept-type params & context]
   (cpv/validate-parameters concept-type params standard-query-parameter-validations)
   params)
 
@@ -1064,6 +1127,13 @@
     (when (seq errors)
       (errors/throw-service-errors :bad-request errors)))
   params)
+
+;; (defn validate-parameters-2
+;;   [concept-type context params]
+;;   ;; (println concept-type)
+;;   ;; (println (:generic-search-parameters-map (:system context)))
+;;   ;; (println params)
+;;   (validate-parameters concept-type params context))
 
 (def ^:private valid-deleted-collections-search-params
   "Valid parameters for deleted collections search"
@@ -1175,3 +1245,35 @@
                         deleted-grans-revision-date-range-validation])]
     (when (seq errors)
       (errors/throw-service-errors :bad-request errors))))
+
+
+
+(comment
+
+  (seq (concat (:hasi "yo") (mapcat #((% {:epgscode "hello"})) (:grid parameter-validations))))
+
+
+  (def generic-param-map {:grid [{:Description "The exposed search-parameter", :Type "search", :Field "CoordinateReferenceSystemID-Code", :Name "epgscode", :Configuration {:Operators ["or"], :Mapping "string"}} {:Description "The exposed search-parameter long-name", :Type "search", :Field "Long-Name", :Name "edslongname", :Configuration {:Operators ["and"], :Mapping "string"}}], :data-quality-summary [], :order-option [], :service-entry [], :service-option []})
+
+ ;; concept-type-parameters-map (common-generic/generic-custom-param-mappings-no-formatting (concept-type generic-search-parameters))
+
+;; (set/union #{:name :provider :native-id :concept-id :id} (into #{} (common-generic/generic-custom-param-mappings-no-formatting (:grid generic-param-map))))
+
+ ;; (zipmap (vec (common-generic/generic-custom-param-mappings-no-formatting (:grid generic-param-map))) (repeat cpv/string-param-options))
+  
+;;   (defn  validate-parameters-2
+;;     [concept-type context params]
+;;   ;; (println concept-type)
+;;   ;; (println (:generic-search-parameters-map (:system context)))
+;;   ;; (println params)
+;;     (validate-parameters concept-type params context))
+
+;; ;; (comment (validate-parameters-2 1 2 3))
+   (def generic-param-map {:grid [{:Description "The exposed search-parameter", :Type "search", :Field "CoordinateReferenceSystemID-Code", :Name "epgscode", :Configuration {:Operators ["or"], :Mapping "string"}} {:Description "The exposed search-parameter long-name", :Type "search", :Field "Long-Name", :Name "edslongname", :Configuration {:Operators ["and"], :Mapping "string"}}], :data-quality-summary [], :order-option [], :service-entry [], :service-option []})
+
+   (zipmap (vec (common-generic/generic-custom-param-mappings-no-formatting (:grid generic-param-map))) (repeat cpv/string-param-options))
+
+  )
+
+
+

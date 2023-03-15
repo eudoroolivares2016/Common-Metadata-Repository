@@ -190,16 +190,22 @@
   (map #(keyword (:Name %)) (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))
 
 ;; TODO: Remove me common-params/param-mappings
-(defn generic-custom-param-mappings
-  "Retrieve the generics index as well the type of mapping that it is string etc"
-  [concept-type]
-  (into {}  (vec (map
-                  #(vec [(keyword (string/lower-case (:Name %)))
-                         (keyword (:Mapping %))])
-                  (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))))
-
+;; (defn generic-custom-param-mappingss
+;;   "Retrieve the generics index as well the type of mapping that it is string etc"
+;;   [concept-type]
+;;   (into {}  (vec (map
+;;                   #(vec [(keyword (string/lower-case (:Name %)))
+;;                          (keyword (:Mapping %))])
+;;                   (only-elastic-preferences (retrieve-custom-generic-search-parameters concept-type))))))
 
 ;; This is using the new style
+
+(defn generic-custom-param-mappings-no-formatting
+  "Retrieve the generics index as well the type of mapping that it is string etc"
+  [context-object]
+  ;; Dig into the configuration and pull out the mapping for that particular one
+   (map #(keyword (:Name %)) context-object))
+
 
 
 

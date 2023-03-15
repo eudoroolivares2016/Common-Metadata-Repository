@@ -102,9 +102,9 @@
 
 (defn cycle-pass-tile-validation
   "Validates cycle pass tile track info for a granule."
-  [_ params]
+  [_ params context]
   (let [basic-errors (basic-cycle-pass-validation params)]
     (if (seq basic-errors)
       basic-errors
-      ;; no basic validation errors, continue with cyle, pass, tile validations
+      ;; no basic validation errors, continue with cycle, pass, tile validations
       (cycle-pass-tile-format-validation params))))
