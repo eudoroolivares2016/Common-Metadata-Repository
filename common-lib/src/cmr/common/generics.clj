@@ -143,3 +143,8 @@
   (->> (latest-approved-document-types)
        (map inf/plural)
        (string/join "|")))
+
+(
+ comment
+  ;; a stub
+  )
