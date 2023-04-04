@@ -39,7 +39,7 @@
                  [org.yaml/snakeyaml "1.31"]
                  [potemkin "0.4.5"]
                  [ring/ring-codec "1.2.0"]
-                 [ring/ring-core "1.9.6"]
+                 [ring/ring-core "1.10.0"]
                  [ring/ring-json "0.5.1"]]
   :plugins [[drift "1.5.3"]
             [lein-exec "0.3.7"]
