@@ -144,7 +144,3 @@
        (map inf/plural)
        (string/join "|")))
 
-(
- comment
-  ;; a stub
-  )
