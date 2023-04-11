@@ -53,8 +53,7 @@
                [ring/ring-codec]]
   :dependencies ~(concat '[[commons-codec/commons-codec "1.11"]
                            [org.clojure/clojure "1.10.0"]
-                           ;; TODO Should these keep up with other dependencies?
-                           [ring/ring-codec "1.1.1"]]
+                           [ring/ring-codec "1.2.0"]]
                          project-dependencies)
   :plugins [[lein-environ "1.1.0"]
             [lein-shell "0.5.0"]
