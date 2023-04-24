@@ -39,6 +39,7 @@
                  [org.clojure/tools.reader "1.3.2"]
                  [org.eclipse.emf/org.eclipse.emf.ecore "2.23.0"]
                  [org.eclipse.emf/org.eclipse.emf.common "2.21.0"]
+                 [org.hsqldb/hsqldb "2.7.1"]
                  [org.geotools/gt-shapefile "28.2"]
                  [org.geotools/gt-geojsondatastore "26.7"]
                  [org.geotools.xsd/gt-xsd-kml "27.1"]
